@@ -1,0 +1,12 @@
+package com.grupo3.misterpastel.model
+
+enum class Categoria {
+    TORTA_CUADRADA,
+    TORTA_CIRCULAR,
+    POSTRE_INDIVIDUAL,
+    PRODUCTO_SIN_AZUCAR,
+    PASTELERIA_TRADICIONAL,
+    PRODUCTO_SIN_GLUTEN,
+    PRODUCTO_VEGANO,
+    TORTA_ESPECIAL
+}
