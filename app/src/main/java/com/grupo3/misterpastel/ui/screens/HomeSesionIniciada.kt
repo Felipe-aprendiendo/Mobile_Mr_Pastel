@@ -275,7 +275,6 @@ fun ProductoCard(producto: Producto, navController: NavController) {
             )
 
             OutlinedButton(onClick = {
-                // TODO: Aquí se debería navegar a la pantalla de detalle del producto
                 navController.navigate("detalle/${producto.id}")
             }) {
 
