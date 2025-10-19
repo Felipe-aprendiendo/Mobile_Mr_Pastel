@@ -133,7 +133,7 @@ fun HomeSesionIniciada(navController: NavController) {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(productos) { producto ->
-                        ProductoCard(producto)
+                        ProductoCard(producto, navController)
                     }
                 }
             }
@@ -227,7 +227,7 @@ fun DrawerHeader(nombreUsuario: String) {
 // Este composable arma las tarjetas de presentación de cada producto
 // Muestra cada producto con su imagen, nombre, precio y botón de acción
 @Composable
-fun ProductoCard(producto: Producto) {
+fun ProductoCard(producto: Producto, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +276,7 @@ fun ProductoCard(producto: Producto) {
 
             OutlinedButton(onClick = {
                 // TODO: Aquí se debería navegar a la pantalla de detalle del producto
-                // navController.navigate("detalle/${producto.id}")
+                navController.navigate("detalle/${producto.id}")
             }) {
 
                 Text("Ver Detalles")
