@@ -11,13 +11,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.grupo3.misterpastel.ui.theme.MisterPastelTheme
+import com.grupo3.misterpastel.navigation.AppNavigation
+import com.grupo3.misterpastel.ui.theme.MrPastelTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            MrPastelTheme {
+                AppNavigation()
+            }
+
 
 
 
