@@ -28,3 +28,12 @@ data class Producto(
 )
 * */
 
+{
+    fun precioDouble(): Double {
+        // Extrae números del string "45.000 CLP" → 45000.0
+        return precio.replace("[^\\d.,]".toRegex(), "")
+            .replace(".", "")
+            .replace(",", ".")
+            .toDoubleOrNull() ?: 0.0
+    }
+}
