@@ -43,11 +43,46 @@ fun HomeSesionIniciada(navController: NavController) {
     // En la versión definitiva, los productos deberían venir desde el ViewModel. Por eso traje solo algunos productos del catálogo, luego ya se deben traer todos o al menos (creo) uno de cada categoria
     // val productos by viewModel.productos.collectAsState()
     val productos = listOf(
-        Producto(1, "Torta Cuadrada de Chocolate", "$45.000 CLP", R.drawable.torta_chocolate, Categoria.TORTA_CUADRADA),
-        Producto(2, "Torta Circular de Frutas", "$50.000 CLP", R.drawable.torta_frutas, Categoria.TORTA_CIRCULAR),
-        Producto(3, "Mousse de Chocolate", "$5.000 CLP", R.drawable.mousse_chocolate, Categoria.POSTRE_INDIVIDUAL),
-        Producto(4, "Torta Especial Cumpleaños", "$55.000 CLP", R.drawable.torta_cumple, Categoria.TORTA_ESPECIAL),
-        Producto(5, "Empanada de Manzana", "$3.000 CLP", R.drawable.empanada_manzana, Categoria.PASTELERIA_TRADICIONAL)
+        Producto(
+            1,
+            "Torta Cuadrada de Chocolate",
+            "$45.000 CLP",
+            R.drawable.torta_chocolate,
+            Categoria.TORTA_CUADRADA,
+            "Bizcocho húmedo de cacao con relleno de ganache y cobertura de chocolate amargo. Ideal para celebraciones y amantes del sabor intenso."
+        ),
+        Producto(
+            2,
+            "Torta Circular de Frutas",
+            "$50.000 CLP",
+            R.drawable.torta_frutas,
+            Categoria.TORTA_CIRCULAR,
+            "Base esponjosa con crema pastelera y frutas frescas de temporada. Equilibrio perfecto entre dulzura y frescura natural."
+        ),
+        Producto(
+            3,
+            "Mousse de Chocolate",
+            "$5.000 CLP",
+            R.drawable.mousse_chocolate,
+            Categoria.POSTRE_INDIVIDUAL,
+            "Postre cremoso de textura ligera con cacao premium, decorado con virutas de chocolate. Perfecto para disfrutar después de una comida."
+        ),
+        Producto(
+            4,
+            "Torta Especial Cumpleaños",
+            "$55.000 CLP",
+            R.drawable.torta_cumple,
+            Categoria.TORTA_ESPECIAL,
+            "Diseño personalizado con crema y fondant. Sabor a vainilla o chocolate según preferencia. Ideal para cumpleaños y celebraciones familiares."
+        ),
+        Producto(
+            5,
+            "Empanada de Manzana",
+            "$3.000 CLP",
+            R.drawable.empanada_manzana,
+            Categoria.PASTELERIA_TRADICIONAL,
+            "Masa crujiente rellena con compota de manzana y canela. Dulce artesanal perfecto para acompañar con té o café."
+        )
     )
 
     // ModalNavigationDrawer envuelve toda la UI (scaffold = barra superior + contenido + carrito) y provee el menú lateral

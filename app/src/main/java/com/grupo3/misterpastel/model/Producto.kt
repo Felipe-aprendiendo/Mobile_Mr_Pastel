@@ -11,7 +11,8 @@ data class Producto(
     val nombre: String,
     val precio: String,
     @DrawableRes val imagen: Int, //ver el comentario que dejé abajo
-    val categoria: Categoria
+    val categoria: Categoria,
+    val descripcion: String
 )
 
 
