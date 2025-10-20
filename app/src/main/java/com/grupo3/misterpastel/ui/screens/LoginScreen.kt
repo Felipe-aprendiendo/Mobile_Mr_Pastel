@@ -1,25 +1,59 @@
 package com.grupo3.misterpastel.ui.screens
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.R
+import com.grupo3.misterpastel.viewmodel.LoginViewModel
 
+/**
+ * Pantalla de inicio de sesión conectada a LoginViewModel.
+ * - Si el login es exitoso: navega a "home_iniciada".
+ * - Muestra errores simples y estado de carga.
+ */
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    vm: LoginViewModel = viewModel()
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val state by vm.uiState.collectAsState()
+
+    // Navega automáticamente cuando success = true
+    LaunchedEffect(state.success) {
+        if (state.success) {
+            navController.navigate("home_iniciada") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
+
+    // Scroll y ajuste de insets (para teclado)
+    val scrollState = rememberScrollState()
+    val view = LocalView.current
+    SideEffect {
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets -> insets }
+    }
 
     Box(
         modifier = Modifier
@@ -29,12 +63,15 @@ fun LoginScreen(navController: NavController) {
         contentAlignment = Alignment.Center
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Logo principal
+            // Logo
             Image(
-                painter = painterResource(id = R.drawable.logo_claro),
+                painter = painterResource(id = R.drawable.logo1_sf),
                 contentDescription = "Logo Pastelería 1000 Sabores",
                 modifier = Modifier.size(120.dp)
             )
@@ -45,48 +82,46 @@ fun LoginScreen(navController: NavController) {
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Campo de correo
+            // Correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo de contraseña
+            // Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Botón principal
+            // Botón Ingresar
             Button(
-                onClick = {
-                    /* TODO: esto está pendiente de implementar */
-                    // Aquí más adelante se llamará al ViewModel
-                    // por ahora solo navega de prueba
-                    navController.navigate("home_iniciada")
-                },
+                onClick = { vm.login(email, password) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Ingresar")
+                Text(if (state.loading) "Ingresando..." else "Ingresar")
+            }
+
+            // Error (si existe)
+            state.error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
             }
 
             // Enlace a registro
-            TextButton(
-                onClick = { navController.navigate("registro") }
-            ) {
+            TextButton(onClick = { navController.navigate("registro") }) {
                 Text("¿No tienes cuenta? Regístrate aquí")
             }
 
-            // Botón volver por si el cliente se equivcó y quiere solo volver
+            // Volver
             OutlinedButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth()
@@ -96,4 +131,3 @@ fun LoginScreen(navController: NavController) {
         }
     }
 }
-

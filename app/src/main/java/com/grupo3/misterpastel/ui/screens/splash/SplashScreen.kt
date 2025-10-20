@@ -36,7 +36,7 @@ fun SplashScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.logo_oscuro),
+                painter = painterResource(id = R.drawable.logo1_sf),
                 contentDescription = "Logo Pastelería 1000 Sabores",
                 modifier = Modifier
                     .size(300.dp)
