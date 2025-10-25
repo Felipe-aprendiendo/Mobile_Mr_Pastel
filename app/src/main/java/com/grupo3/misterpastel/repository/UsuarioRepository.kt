@@ -15,22 +15,37 @@ object UsuarioRepository {
     private val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual
 
-    fun registrar(nombre: String, email: String, password: String, edad: Int, fotoUrl: String? = null): Result<Usuario> {
+    fun registrar(
+        nombre: String,
+        email: String,
+        password: String,
+        edad: Int,
+        fechaNacimiento: String,
+        direccion: String,
+        telefono: String,
+        fotoUrl: String? = null
+    ): Result<Usuario> {
         if (usuarios.any { it.email.equals(email, ignoreCase = true) }) {
             return Result.failure(IllegalArgumentException("El correo ya está registrado"))
         }
+
         val nuevo = Usuario(
             id = UUID.randomUUID().toString(),
             nombre = nombre,
             email = email,
             edad = edad,
+            fechaNacimiento = fechaNacimiento,
+            direccion = direccion,
+            telefono = telefono,
             password = password,
             fotoUrl = fotoUrl
         )
+
         usuarios.add(nuevo)
         _usuarioActual.value = nuevo
         return Result.success(nuevo)
     }
+
 
     fun login(email: String, password: String): Result<Usuario> {
         val u = usuarios.find { it.email.equals(email, ignoreCase = true) && it.password == password }
