@@ -6,13 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Categoria
-import com.grupo3.misterpastel.model.EstadoPedido
-import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Usuario
+import com.grupo3.misterpastel.model.Pedido
+import com.grupo3.misterpastel.repository.CarritoItem
+import com.grupo3.misterpastel.repository.EstadoPedido
 import kotlinx.coroutines.launch
+import java.util.UUID
 
-class PerfilViewModel: ViewModel() {
+class PerfilViewModel : ViewModel() {
 
     private val _usuario = MutableLiveData<Usuario>()
     val usuario: LiveData<Usuario> = _usuario
@@ -25,66 +27,102 @@ class PerfilViewModel: ViewModel() {
         cargarPedidos()
     }
 
+    /**
+     * Carga un usuario de ejemplo.
+     */
     private fun cargarDatosUsuario() {
         viewModelScope.launch {
-            // TODO: Cargar datos de usuario desde el repositorio
             _usuario.value = Usuario(
-                nombre = "Nombre de Usuario",
-                email = "usuario@email.com",
-                edad = 30, // Placeholder
-                fechaNacimiento = "01/01/1990", // Placeholder
-                direccion = "Calle Falsa 123", // Placeholder
-                telefono = "123456789" // Placeholder
+                id = "U001",
+                nombre = "Felipe Hernández",
+                email = "felipe@email.com",
+                edad = 30,
+                fechaNacimiento = "1995-05-10",
+                direccion = "Calle Falsa 123",
+                telefono = "987654321",
+                password = "123456",
+                fotoUrl = null
             )
         }
     }
 
-    fun actualizarDatosUsuario(nombre: String, email: String, edad: Int, fechaNacimiento: String, direccion: String, telefono: String) {
+    /**
+     * Actualiza los datos del usuario.
+     */
+    fun actualizarDatosUsuario(
+        nombre: String,
+        email: String,
+        edad: Int,
+        fechaNacimiento: String,
+        direccion: String,
+        telefono: String,
+        password: String,
+        fotoUrl: String? = null
+    ) {
         viewModelScope.launch {
-            // TODO: Actualizar datos de usuario en el repositorio
-            val usuarioActualizado = Usuario(nombre, email, edad, fechaNacimiento, direccion, telefono)
+            val usuarioActualizado = Usuario(
+                id = _usuario.value?.id ?: UUID.randomUUID().toString(),
+                nombre = nombre,
+                email = email,
+                edad = edad,
+                fechaNacimiento = fechaNacimiento,
+                direccion = direccion,
+                telefono = telefono,
+                password = password,
+                fotoUrl = fotoUrl
+            )
             _usuario.value = usuarioActualizado
         }
     }
 
+    /**
+     * Carga pedidos de ejemplo asociados al usuario actual.
+     */
     private fun cargarPedidos() {
         viewModelScope.launch {
-            // TODO: Cargar pedidos desde el repositorio
-            // TODO: Debes reemplazar R.drawable.ic_launcher_background con tus propias imágenes
-            _pedidos.value = listOf(
-                Pedido(
-                    id = "1",
-                    fecha = "2024-01-15",
-                    productos = listOf(
-                        Producto(
+            val pedido1 = Pedido(
+                id = "P001",
+                userId = "U001",
+                fecha = System.currentTimeMillis() - 86400000, // hace 1 día
+                items = listOf(
+                    CarritoItem(
+                        producto = Producto(
                             id = 1,
-                            nombre = "Pastel de Chocolate",
-                            precio = "25.0",
-                            imagen = R.drawable.ic_launcher_background, // Placeholder
+                            nombre = "Torta de Chocolate",
+                            precio = "20000",
+                            imagen = R.drawable.ic_launcher_background,
                             categoria = Categoria.TORTA_CIRCULAR,
-                            descripcion = "Delicioso pastel de chocolate"
-                        )
-                    ),
-                    total = 25.0,
-                    estado = EstadoPedido.ENTREGADO
+                            descripcion = "Torta clásica de chocolate"
+                        ),
+                        cantidad = 1
+                    )
                 ),
-                Pedido(
-                    id = "2",
-                    fecha = "2024-02-20",
-                    productos = listOf(
-                        Producto(
-                            id = 2,
-                            nombre = "Pastel de Fresa",
-                            precio = "22.0",
-                            imagen = R.drawable.ic_launcher_background, // Placeholder
-                            categoria = Categoria.TORTA_CUADRADA,
-                            descripcion = "Pastel con fresas frescas"
-                        )
-                    ),
-                    total = 22.0,
-                    estado = EstadoPedido.ENTREGADO
-                )
+                total = 20000.0,
+                estado = EstadoPedido.ENTREGADO
             )
+
+            val pedido2 = Pedido(
+                id = "P002",
+                userId = "U001",
+                fecha = System.currentTimeMillis() - 43200000, // hace 12 horas
+                items = listOf(
+                    CarritoItem(
+                        producto = Producto(
+                            id = 2,
+                            nombre = "Cheesecake de Fresa",
+                            precio = "15000",
+                            imagen = R.drawable.ic_launcher_background,
+                            categoria = Categoria.POSTRE_INDIVIDUAL,
+                            descripcion = "Cheesecake con fresas naturales"
+                        ),
+                        cantidad = 1
+                    )
+                ),
+                total = 15000.0,
+                estado = EstadoPedido.PREPARANDO
+            )
+
+            _pedidos.value = listOf(pedido1, pedido2)
         }
     }
 }
