@@ -129,7 +129,7 @@ fun RegistroScreen(
                 value = fechaNacimiento,
                 onValueChange = { fechaNacimiento = it; fechaError = false },
                 label = { Text("Fecha de nacimiento (dd/MM/yyyy)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 isError = fechaError,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()

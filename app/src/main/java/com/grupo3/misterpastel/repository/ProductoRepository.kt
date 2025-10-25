@@ -53,6 +53,14 @@ object ProductoRepository {
             imagen = R.drawable.empanada_manzana,
             categoria = Categoria.PASTELERIA_TRADICIONAL,
             descripcion = "Masa crujiente con compota de manzana y canela."
+        ),
+        Producto(
+            id = 6,
+            nombre = "Galleta de Avena",
+            precio = "$4.500 CLP",
+            imagen = R.drawable.galletas_avena,
+            categoria = Categoria.PASTELERIA_TRADICIONAL,
+            descripcion = "Dulce y crujiente relleno de chocolate caliente."
         )
     )
 
