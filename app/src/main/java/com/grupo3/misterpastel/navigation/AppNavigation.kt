@@ -16,7 +16,9 @@ import com.grupo3.misterpastel.ui.screens.LoginScreen
 import com.grupo3.misterpastel.ui.screens.RegistroScreen
 import com.grupo3.misterpastel.ui.screens.splash.SplashScreen
 import com.grupo3.misterpastel.R
-
+import com.grupo3.misterpastel.ui.screens.CarritoScreen
+import com.grupo3.misterpastel.ui.screens.PedidoScreen
+import com.grupo3.misterpastel.ui.screens.PerfilUsuarioScreen
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -52,7 +54,9 @@ fun AppNavigation(){
             )
             DetalleProductoScreen(navController, producto)
         }
-
+        composable("carrito") { CarritoScreen(navController) }
+        composable("pedidos") { PedidoScreen(navController) }
+        composable("perfil") { PerfilUsuarioScreen(navController) }
 
 
 
