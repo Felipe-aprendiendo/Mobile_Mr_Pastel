@@ -2,8 +2,11 @@ package com.grupo3.misterpastel.model
 
 data class Pedido(
     val id: String,
-    val fecha: String,
-    val productos: List<Producto>,
+    val userId: String,
+    val fecha: Long,
+    val items: List<com.grupo3.misterpastel.repository.CarritoItem>,
     val total: Double,
-    val estado: EstadoPedido
+    val estado: com.grupo3.misterpastel.repository.EstadoPedido
+    
+    
 )
