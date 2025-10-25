@@ -1,6 +1,5 @@
 package com.grupo3.misterpastel.ui.screens
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,10 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Categoria
+import com.grupo3.misterpastel.viewmodel.AutenticarViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,11 +35,16 @@ fun HomeSesionIniciada(navController: NavController) {
     //El estado del drawer controla si el menú lateral está abierto o cerrado
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // === ViewModel de autenticación ===
+    val autenticarViewModel: AutenticarViewModel = viewModel()
+    val usuarioActual by autenticarViewModel.usuarioActual.collectAsState()
+
     // TODO: En la versión final el nombre del usuario debe venir desde viewModel
     // val nombreUsuario by viewModel.nombreUsuario.collectAsState()
     //Pese a que el login no lo implementemos, de acuerdo a lo que dijo el profe, hay que buscar la forma de traer el nombre del usuario
     //del viewModel o dejar un mensaje genérico
-    val nombreUsuario = "Felipe"
+    val nombreUsuario = usuarioActual ?: "Cliente"
 
     // En la versión definitiva, los productos deberían venir desde el ViewModel. Por eso traje solo algunos productos del catálogo, luego ya se deben traer todos o al menos (creo) uno de cada categoria
     // val productos by viewModel.productos.collectAsState()
@@ -93,7 +99,7 @@ fun HomeSesionIniciada(navController: NavController) {
                 color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxSize()
             ) {
-                DrawerContent(navController, nombreUsuario)
+                DrawerContent(navController, nombreUsuario, autenticarViewModel)
             }
         }
     ) {
@@ -143,13 +149,14 @@ fun HomeSesionIniciada(navController: NavController) {
 
 
 
-
-
-
 // Aquí se define el contenido del drawer (menú lateral)
 // Contiene el encabezado (logo y saludo) y las opciones de navegación
 @Composable
-fun DrawerContent(navController: NavController, nombreUsuario: String) {
+fun DrawerContent(
+    navController: NavController,
+    nombreUsuario: String,
+    autenticarViewModel: AutenticarViewModel
+) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -161,6 +168,9 @@ fun DrawerContent(navController: NavController, nombreUsuario: String) {
         DrawerItem("🧾 Mis pedidos") { navController.navigate("pedidos") }
         Spacer(modifier = Modifier.weight(1f))
         DrawerItem("🚪 Cerrar sesión") {
+            // === Lógica real de cierre de sesión ===
+            autenticarViewModel.cerrarSesion()
+
             navController.navigate("home") {
                 popUpTo("home_iniciada") { inclusive = true }
             }
@@ -222,8 +232,6 @@ fun DrawerHeader(nombreUsuario: String) {
 
 
 
-
-
 // Este composable arma las tarjetas de presentación de cada producto
 // Muestra cada producto con su imagen, nombre, precio y botón de acción
 @Composable
@@ -258,7 +266,8 @@ fun ProductoCard(producto: Producto, navController: NavController) {
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 ),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(vertical = 10.dp)
             )
 
@@ -277,10 +286,8 @@ fun ProductoCard(producto: Producto, navController: NavController) {
             OutlinedButton(onClick = {
                 navController.navigate("detalle/${producto.id}")
             }) {
-
                 Text("Ver Detalles")
             }
         }
     }
 }
-

@@ -1,20 +1,27 @@
 package com.grupo3.misterpastel.ui.screens
 
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.R
+import com.grupo3.misterpastel.viewmodel.AutenticarViewModel
 
 @Composable
 fun HomeScreen(navController: NavController) {
+
+    // === ViewModel de autenticación ===
+    // Permite verificar si el usuario tiene sesión iniciada
+    val autenticarViewModel: AutenticarViewModel = viewModel()
+    val isUserLoggedIn by autenticarViewModel.isLoggedIn.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -58,7 +65,15 @@ fun HomeScreen(navController: NavController) {
 
             // Botón para ver el catálogo sin iniciar sesión
             OutlinedButton(
-                onClick = { navController.navigate("catalogo") },
+                onClick = {
+                    // Si el usuario tiene sesión activa lo enviamos al HomeSesionIniciada
+                    // Caso contrario, debe iniciar sesión primero
+                    if (isUserLoggedIn) {
+                        navController.navigate("home_iniciada")
+                    } else {
+                        navController.navigate("login")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Ver Catálogo")
@@ -66,4 +81,3 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
-
