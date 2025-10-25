@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Categoria
+import com.grupo3.misterpastel.model.EstadoPedido
 import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Usuario
@@ -64,7 +65,8 @@ class PerfilViewModel: ViewModel() {
                             descripcion = "Delicioso pastel de chocolate"
                         )
                     ),
-                    total = 25.0
+                    total = 25.0,
+                    estado = EstadoPedido.ENTREGADO
                 ),
                 Pedido(
                     id = "2",
@@ -79,7 +81,8 @@ class PerfilViewModel: ViewModel() {
                             descripcion = "Pastel con fresas frescas"
                         )
                     ),
-                    total = 22.0
+                    total = 22.0,
+                    estado = EstadoPedido.ENTREGADO
                 )
             )
         }
