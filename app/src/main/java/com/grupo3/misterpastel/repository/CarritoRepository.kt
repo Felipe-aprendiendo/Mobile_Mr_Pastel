@@ -65,6 +65,19 @@ object CarritoRepository {
 
     fun totalBruto(): Double = _items.value.sumOf { it.subtotal() }
 
+    fun totalConDescuento(edadUsuario: Int?, emailUsuario: String?, cupon: String?): Double {
+        val subtotal = totalBruto()
+        var totalFinal = subtotal
+
+        when {
+            !emailUsuario.isNullOrBlank() && emailUsuario.endsWith("@duocuc.cl", true) -> totalFinal = 0.0
+            (edadUsuario ?: 0) >= 50 -> totalFinal = subtotal * 0.5
+            cupon.equals("FELICES50", ignoreCase = true) -> totalFinal = subtotal * 0.9
+        }
+
+        return totalFinal
+    }
+
     // -------------------------------------------
     // 🧮 Cálculo del resumen y generación comprob.
     // -------------------------------------------
