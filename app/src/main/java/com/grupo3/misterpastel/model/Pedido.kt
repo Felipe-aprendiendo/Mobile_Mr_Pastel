@@ -6,7 +6,7 @@ data class Pedido(
     val fecha: Long,
     val items: List<com.grupo3.misterpastel.repository.CarritoItem>,
     val total: Double,
-    val estado: com.grupo3.misterpastel.repository.EstadoPedido
+    val estado: com.grupo3.misterpastel.model.EstadoPedido
     
     
 )

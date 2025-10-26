@@ -9,8 +9,8 @@ import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.model.Pedido
+import com.grupo3.misterpastel.model.EstadoPedido
 import com.grupo3.misterpastel.repository.CarritoItem
-import com.grupo3.misterpastel.repository.EstadoPedido
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -119,7 +119,7 @@ class PerfilViewModel : ViewModel() {
                     )
                 ),
                 total = 15000.0,
-                estado = EstadoPedido.PREPARANDO
+                estado = EstadoPedido.EN_PREPARACION
             )
 
             _pedidos.value = listOf(pedido1, pedido2)

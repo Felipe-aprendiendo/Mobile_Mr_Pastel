@@ -1,16 +1,12 @@
 package com.grupo3.misterpastel.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -19,19 +15,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.grupo3.misterpastel.model.CarritoItem
+import com.grupo3.misterpastel.model.subtotal
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CarritoScreen(navController: NavController, carritoViewModel: CarritoViewModel = viewModel()) {
+fun CarritoScreen(
+    navController: NavController,
+    vm: CarritoViewModel = viewModel()
+) {
+    val items by vm.items.collectAsState()
+    val coupon by vm.coupon.collectAsState()
 
-    val carritoItems by carritoViewModel.carritoItems.observeAsState(emptyList())
-    val total by carritoViewModel.total.observeAsState(0.0)
+    // Si ya tienes estos datos en la sesión, asígnalos acá:
+    // vm.edadUsuario = usuario?.edad
+    // vm.emailUsuario = usuario?.email
 
-    val formatter = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
+    var codigoPromo by remember { mutableStateOf(coupon ?: "") }
+    val nf = remember { NumberFormat.getNumberInstance(Locale("es","CL")) }
+
+    val totalBruto = remember(items) { vm.totalBruto() }
+    val totalConDesc = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) { vm.totalConDescuento() }
 
     Scaffold(
         topBar = {
@@ -39,7 +45,7 @@ fun CarritoScreen(navController: NavController, carritoViewModel: CarritoViewMod
                 title = { Text("Tu carrito 🛒", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
@@ -48,90 +54,124 @@ fun CarritoScreen(navController: NavController, carritoViewModel: CarritoViewMod
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            if (carritoItems.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Tu carrito está vacío", style = MaterialTheme.typography.titleMedium)
+
+            if (items.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Aún no agregas productos.")
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(carritoItems) { item ->
-                        CarritoItemCard(item = item, viewModel = carritoViewModel)
+                    items(items, key = { it.producto.id }) { item ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(item.producto.nombre, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        "${nf.format(item.subtotal())} CLP",
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(onClick = {
+                                        vm.actualizarCantidad(item.producto.id, item.cantidad - 1)
+                                    }) { Text("-") }
+
+                                    Text(
+                                        text = "${item.cantidad}",
+                                        fontSize = 16.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    OutlinedButton(onClick = {
+                                        vm.actualizarCantidad(item.producto.id, item.cantidad + 1)
+                                    }) { Text("+") }
+
+                                    TextButton(onClick = { vm.eliminar(item.producto.id) }) {
+                                        Text("Quitar")
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.End
+
+                Spacer(Modifier.height(16.dp))
+
+                // Código promocional
+                OutlinedTextField(
+                    value = codigoPromo,
+                    onValueChange = { codigoPromo = it },
+                    label = { Text("Código promocional") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(
+                    onClick = { vm.setCupon(codigoPromo) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 ) {
+                    Text(if ((coupon ?: "").equals("FELICES50", true)) "Código aplicado ✅" else "Aplicar código")
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Totales
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "Total: ${formatter.format(total)}",
+                        text = "Total bruto: ${nf.format(totalBruto)} CLP",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    val etiquetaDesc = when {
+                        // Coincide con tu política
+                        (vm.emailUsuario ?: "").endsWith("@duocuc.cl", true) -> "Descuento aplicado: 100% (DUOC)"
+                        (vm.edadUsuario ?: 0) >= 50 -> "Descuento aplicado: 50% (edad)"
+                        (coupon ?: "").equals("FELICES50", true) -> "Descuento aplicado: 10% (cupón)"
+                        else -> "Descuento aplicado: 0%"
+                    }
+                    Text(
+                        text = etiquetaDesc,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = "Total a pagar: ${nf.format(totalConDesc)} CLP",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+
+                Spacer(Modifier.height(16.dp))
+
                 Button(
                     onClick = {
-                        carritoViewModel.vaciarCarrito()
-                        navController.navigate("pedidos")
+                        // vm.confirmarPedido(context) si quieres,
+                        // y luego navController.navigate("confirmacion")
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
                     Text("Proceder al pago", fontSize = 18.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CarritoItemCard(item: CarritoItem, viewModel: CarritoViewModel) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(item.producto.nombre, fontWeight = FontWeight.Bold)
-                Text(item.producto.precio, color = MaterialTheme.colorScheme.primary)
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(onClick = { viewModel.setCantidad(item.producto, item.cantidad - 1) }) {
-                    Text("-")
-                }
-                Text(
-                    text = "${item.cantidad}",
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center
-                )
-                OutlinedButton(onClick = { viewModel.setCantidad(item.producto, item.cantidad + 1) }) {
-                    Text("+")
-                }
-                IconButton(onClick = { viewModel.eliminarProducto(item) }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar producto", tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
