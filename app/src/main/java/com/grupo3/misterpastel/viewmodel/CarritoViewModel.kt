@@ -44,5 +44,21 @@ class CarritoViewModel : ViewModel() {
     }
 
 
+    fun confirmarPedidoYGuardarComprobante(
+        usuarioNombre: String,
+        usuarioEmail: String,
+        edadUsuario: Int?,
+        metodoPago: String = "Tarjeta de crédito"
+    ): com.grupo3.misterpastel.model.ComprobantePago {
+        return CarritoRepository.confirmarPedidoYGuardarComprobante(
+            usuarioNombre = usuarioNombre,
+            usuarioEmail = usuarioEmail,
+            edadUsuario = edadUsuario,
+            metodoPago = metodoPago
+        )
+    }
+
+
+
 
 }

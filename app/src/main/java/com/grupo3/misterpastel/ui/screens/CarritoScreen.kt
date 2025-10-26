@@ -18,6 +18,7 @@ import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.subtotal
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
 import com.grupo3.misterpastel.viewmodel.PagoViewModel
+import com.grupo3.misterpastel.viewmodel.PedidoViewModel
 import java.text.NumberFormat
 import java.util.*
 
@@ -26,7 +27,8 @@ import java.util.*
 fun CarritoScreen(
     navController: NavController,
     vm: CarritoViewModel = viewModel(),
-    pagoVM: PagoViewModel = viewModel() // ✅ Se declara aquí, no dentro del botón
+    pagoVM: PagoViewModel = viewModel(),
+    pedidoVM: PedidoViewModel = viewModel() // 🆕 se agrega aquí
 ) {
     val items by vm.items.collectAsState()
     val coupon by vm.coupon.collectAsState()
@@ -169,12 +171,25 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // ✅ Botón corregido
+                // ✅ Botón de pago actualizado con integración de PedidoViewModel
                 Button(
                     onClick = {
                         val usuario = com.grupo3.misterpastel.repository.UsuarioRepository.usuarioActual.value
                         if (usuario != null && items.isNotEmpty()) {
-                            pagoVM.iniciarPago(usuario.nombre, usuario.email, usuario.edad)
+                            // 1️⃣ Genera comprobante de pago
+                            val comprobante = vm.confirmarPedidoYGuardarComprobante(
+                                usuarioNombre = usuario.nombre,
+                                usuarioEmail = usuario.email,
+                                edadUsuario = usuario.edad
+                            )
+
+                            // 2️⃣ Registra el pedido en Room
+                            pedidoVM.registrarPedidoDesdeComprobante(usuario.id, comprobante)
+
+                            // 3️⃣ Notifica al PagoViewModel para mostrar comprobante
+                            pagoVM.setComprobante(comprobante)
+
+                            // 4️⃣ Navega a splash "procesando pago"
                             navController.navigate("procesando_pago")
                         } else {
                             navController.navigate("login")
