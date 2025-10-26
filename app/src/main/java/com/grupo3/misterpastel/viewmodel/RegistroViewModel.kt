@@ -1,10 +1,18 @@
 package com.grupo3.misterpastel.viewmodel
 
+import android.os.Build
 import android.util.Patterns
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.grupo3.misterpastel.repository.UsuarioRepository
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
+@RequiresApi(Build.VERSION_CODES.O)
 class RegistroViewModel: ViewModel() {
 
     // Sealed class para representar los diferentes estados del proceso de registro
@@ -17,9 +25,9 @@ class RegistroViewModel: ViewModel() {
     val registrationState: LiveData<RegistrationState> = _registrationState
 
 
-    fun register(name: String, email: String, pass: String, confirmPass: String) {
+    fun register(name: String, email: String, pass: String, confirmPass: String, fechaNacimiento: String) {
 
-        if (name.isBlank() || email.isBlank() || pass.isBlank()) {
+        if (name.isBlank() || email.isBlank() || pass.isBlank() || fechaNacimiento.isBlank()) {
             _registrationState.value = RegistrationState.Error("Todos los campos son obligatorios.")
             return
         }
@@ -39,8 +47,34 @@ class RegistroViewModel: ViewModel() {
             return
         }
 
-        // Si todas las validaciones pasan, registramos al usuario
-        // Por ahora, simulamos un éxito inmediato.
-        _registrationState.value = RegistrationState.Success
+        val edad = try {
+            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            val fecha = LocalDate.parse(fechaNacimiento, formatter)
+            val calculatedAge = Period.between(fecha, LocalDate.now()).years
+            if (calculatedAge < 13) {
+                _registrationState.value = RegistrationState.Error("Debes tener al menos 13 años para registrarte.")
+                return
+            }
+            calculatedAge
+        } catch (e: DateTimeParseException) {
+            _registrationState.value = RegistrationState.Error("Formato de fecha de nacimiento no válido. Usa dd/MM/yyyy.")
+            return
+        }
+
+        val result = UsuarioRepository.registrar(
+            nombre = name,
+            email = email,
+            password = pass,
+            edad = edad,
+            fechaNacimiento = fechaNacimiento,
+            direccion = "", // Campo no disponible en la pantalla de registro
+            telefono = "" // Campo no disponible en la pantalla de registro
+        )
+
+        result.onSuccess {
+            _registrationState.value = RegistrationState.Success
+        }.onFailure {
+            _registrationState.value = RegistrationState.Error(it.message ?: "Error desconocido en el registro")
+        }
     }
 }
