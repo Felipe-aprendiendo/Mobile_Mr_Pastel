@@ -42,6 +42,30 @@ fun HomeSesionIniciada(
     val isGuest = usuarioActual == null
 
     val productos by catalogoViewModel.productos.collectAsState()
+    var showLoginDialog by remember { mutableStateOf(false) }
+
+    if (showLoginDialog) {
+        AlertDialog(
+            onDismissRequest = { showLoginDialog = false },
+            title = { Text("Inicio de Sesión Requerido") },
+            text = { Text("Para acceder al carrito y continuar con la compra, necesitas iniciar sesión.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLoginDialog = false
+                        navController.navigate("login")
+                    }
+                ) {
+                    Text("Iniciar Sesión")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLoginDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -57,7 +81,13 @@ fun HomeSesionIniciada(
         Scaffold(
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = { navController.navigate("carrito") },
+                    onClick = { 
+                        if (isGuest) {
+                            showLoginDialog = true
+                        } else {
+                            navController.navigate("carrito")
+                        }
+                    },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
