@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,10 +24,8 @@ import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 import com.grupo3.misterpastel.viewmodel.SessionViewModel
-import kotlinx.coroutines.launch
-import androidx.compose.ui.layout.ContentScale
 import com.grupo3.misterpastel.ui.components.ProductoCard
-
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +39,7 @@ fun HomeSesionIniciada(
 
     val usuarioActual by sessionViewModel.usuarioActual.collectAsState()
     val nombreUsuario = usuarioActual?.nombre ?: "Cliente"
+    val isGuest = usuarioActual == null
 
     val productos by catalogoViewModel.productos.collectAsState()
 
@@ -52,7 +50,7 @@ fun HomeSesionIniciada(
                 color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxSize()
             ) {
-                DrawerContent(navController, nombreUsuario, sessionViewModel)
+                DrawerContent(navController, nombreUsuario, sessionViewModel, isGuest)
             }
         }
     ) {
@@ -68,7 +66,7 @@ fun HomeSesionIniciada(
             },
             topBar = {
                 TopAppBar(
-                    title = { Text("Bienvenido, $nombreUsuario 🍰") },
+                    title = { Text(if (isGuest) "Catálogo de Productos 🍰" else "Bienvenido, $nombreUsuario 🍰") },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, contentDescription = "Menú")
@@ -115,22 +113,28 @@ fun HomeSesionIniciada(
 fun DrawerContent(
     navController: NavController,
     nombreUsuario: String,
-    sessionViewModel: SessionViewModel
+    sessionViewModel: SessionViewModel,
+    isGuest: Boolean
 ) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        DrawerHeader(nombreUsuario)
+        DrawerHeader(nombreUsuario, isGuest)
         HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-        DrawerItem("👤 Mi cuenta") { navController.navigate("perfil") }
-        DrawerItem("🧾 Mis pedidos") { navController.navigate("pedidos") }
-        Spacer(modifier = Modifier.weight(1f))
-        DrawerItem("🚪 Cerrar sesión") {
-            sessionViewModel.logout()
-            navController.navigate("home") {
-                popUpTo("home_iniciada") { inclusive = true }
+        if (isGuest) {
+            DrawerItem("👤 Iniciar Sesión") { navController.navigate("login") }
+            DrawerItem("✍️ Registrarse") { navController.navigate("registro") }
+        } else {
+            DrawerItem("👤 Mi cuenta") { navController.navigate("perfil") }
+            DrawerItem("🧾 Mis pedidos") { navController.navigate("pedidos") }
+            Spacer(modifier = Modifier.weight(1f))
+            DrawerItem("🚪 Cerrar sesión") {
+                sessionViewModel.logout()
+                navController.navigate("home") {
+                    popUpTo("home_iniciada") { inclusive = true }
+                }
             }
         }
     }
@@ -153,7 +157,7 @@ fun DrawerItem(
 }
 
 @Composable
-fun DrawerHeader(nombreUsuario: String) {
+fun DrawerHeader(nombreUsuario: String, isGuest: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -168,7 +172,7 @@ fun DrawerHeader(nombreUsuario: String) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Bienvenido, $nombreUsuario",
+            text = if (isGuest) "Modo Invitado" else "Bienvenido, $nombreUsuario",
             fontSize = 35.sp,
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.tertiary
