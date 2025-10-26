@@ -1,9 +1,16 @@
 package com.grupo3.misterpastel.ui.screens
 
-import androidx.compose.ui.unit.sp
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,50 +25,76 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.grupo3.misterpastel.model.Usuario
+import com.grupo3.misterpastel.R
+import com.grupo3.misterpastel.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerfilUsuarioScreen(navController: NavController) {
+fun PerfilUsuarioScreen(
+    navController: NavController,
+    sessionViewModel: SessionViewModel = viewModel()
+) {
+    val usuarioActual by sessionViewModel.usuarioActual.collectAsState()
 
-    // TODO: En el futuro, estos datos deben venir del ViewModel del usuario autenticado
-    // Ejemplo:
-    // val viewModel: PerfilViewModel = viewModel()
-    // val usuario by viewModel.usuario.collectAsState()
-    // Por ahora, usamos datos simulados.
-    var usuario by remember {
-        mutableStateOf(
-            Usuario(
-                id = "U001",
-                nombre = "Felipe Hernández",
-                email = "felipe.hernandez@gmail.com",
-                edad = 29,
-                fechaNacimiento = "25/10/1996",
-                direccion = "Av. Providencia 1234, Santiago",
-                telefono = "+56 9 8888 7777",
-                password = "secreto",
-                fotoUrl = null // null para mostrar placeholder
-            )
-        )
+    // Redirección si no hay sesión
+    LaunchedEffect(usuarioActual) {
+        if (usuarioActual == null) {
+            navController.navigate("login") {
+                popUpTo("perfil") { inclusive = true }
+            }
+        }
+    }
+    if (usuarioActual == null) return
+
+    // Estado editable local (inicializado desde sesión)
+    var nombre by remember(usuarioActual) { mutableStateOf(usuarioActual!!.nombre) }
+    var email by remember(usuarioActual) { mutableStateOf(usuarioActual!!.email) }
+    var fechaNacimiento by remember(usuarioActual) { mutableStateOf(usuarioActual!!.fechaNacimiento) }
+    var direccion by remember(usuarioActual) { mutableStateOf(usuarioActual!!.direccion) }
+    var telefono by remember(usuarioActual) { mutableStateOf(usuarioActual!!.telefono) }
+    var fotoUrl by remember(usuarioActual) { mutableStateOf(usuarioActual!!.fotoUrl) }
+
+    var showPicker by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+
+    // Launchers: galería y cámara (preview)
+    val pickFromFiles = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { selected ->
+            fotoUrl = selected.toString()
+            sessionViewModel.actualizarFoto(fotoUrl) { msg -> error = msg }
+        }
     }
 
-    // Variables temporales para los campos editables
-    var nombre by remember { mutableStateOf(usuario.nombre) }
-    var email by remember { mutableStateOf(usuario.email) }
-    var fechaNacimiento by remember { mutableStateOf(usuario.fechaNacimiento) }
-    var direccion by remember { mutableStateOf(usuario.direccion) }
-    var telefono by remember { mutableStateOf(usuario.telefono) }
+    val takePhotoPreview = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bmp: Bitmap? ->
+        bmp?.let {
+            val saved = saveBitmapToGallery(
+                context = context,
+                bitmap = it,
+                displayName = "mr_pastel_profile_${System.currentTimeMillis()}.jpg"
+            )
+            fotoUrl = saved?.toString()
+            sessionViewModel.actualizarFoto(fotoUrl) { msg -> error = msg }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi perfil 👤", fontWeight = FontWeight.Bold) },
+                title = { Text("Mi perfil \uD83E\uDDD1\u200D\uD83C\uDF73", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -73,7 +106,6 @@ fun PerfilUsuarioScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -84,106 +116,151 @@ fun PerfilUsuarioScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // === FOTO DE PERFIL ===
-            if (usuario.fotoUrl != null) {
-                // Carga la imagen remota usando Coil
+            if (fotoUrl != null) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(usuario.fotoUrl)
+                        .data(fotoUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = "Foto de perfil",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(128.dp)
+                        .size(132.dp)
                         .clip(CircleShape)
                         .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 )
             } else {
-                // Placeholder circular con inicial del nombre
+                // Placeholder con logo
                 Box(
                     modifier = Modifier
-                        .size(128.dp)
+                        .size(132.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = nombre.firstOrNull()?.toString()?.uppercase() ?: "?",
-                        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_claro),
+                        contentDescription = "Foto de perfil no establecida",
+                        modifier = Modifier.size(76.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
 
-            // === BOTÓN CAMBIAR FOTO ===
-            OutlinedButton(
-                onClick = {
-                    // TODO: Implementar cambio de foto usando PhotoPicker o GetContent()
-                    // Ejemplo futuro:
-                    // val launcher = rememberLauncherForActivityResult(GetContent()) { uri ->
-                    //     viewModel.actualizarFotoUsuario(uri)
-                    // }
-                }
-            ) {
+            OutlinedButton(onClick = { showPicker = true }) {
                 Text("Cambiar foto")
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(18.dp))
 
-            // === CAMPOS EDITABLES ===
-            PerfilTextField("Nombre", nombre) { nombre = it }
-            PerfilTextField("Correo electrónico", email) { email = it }
-            PerfilTextField("Fecha de nacimiento", fechaNacimiento) { fechaNacimiento = it }
-            PerfilTextField("Dirección", direccion) { direccion = it }
-            PerfilTextField("Teléfono", telefono) { telefono = it }
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(6.dp))
+            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            PerfilField("Nombre", nombre) { nombre = it }
+            PerfilField("Correo electrónico", email) { email = it }
+            PerfilField("Fecha de nacimiento", fechaNacimiento) { fechaNacimiento = it }
+            PerfilField("Dirección", direccion) { direccion = it }
+            PerfilField("Teléfono", telefono) { telefono = it }
 
-            // === BOTÓN GUARDAR CAMBIOS ===
+            Spacer(Modifier.height(22.dp))
+
             Button(
                 onClick = {
-                    // TODO: Actualizar usuario en ViewModel/Repositorio
-                    // Ejemplo:
-                    // viewModel.actualizarUsuario(
-                    //     usuario.copy(nombre = nombre, email = email, direccion = direccion, ...)
-                    // )
-                    usuario = usuario.copy(
-                        nombre = nombre,
-                        email = email,
-                        fechaNacimiento = fechaNacimiento,
-                        direccion = direccion,
-                        telefono = telefono
+                    val actualizado = usuarioActual!!.copy(
+                        nombre = nombre.trim(),
+                        email = email.trim(),
+                        fechaNacimiento = fechaNacimiento.trim(),
+                        direccion = direccion.trim(),
+                        telefono = telefono.trim(),
+                        fotoUrl = fotoUrl
                     )
+                    sessionViewModel.actualizarPerfil(actualizado) { msg -> error = msg }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(52.dp)
             ) {
-                Text("Guardar cambios", fontSize = 18.sp)
+                Text("Guardar cambios")
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+
+        }
+
+        // BottomSheet para elegir cámara o archivos
+        if (showPicker) {
+            ModalBottomSheet(onDismissRequest = { showPicker = false }) {
+                ListItem(
+                    headlineContent = { Text("Usar cámara") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showPicker = false
+                            takePhotoPreview.launch(null)
+                        }
+                )
+                ListItem(
+                    headlineContent = { Text("Elegir desde archivos") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showPicker = false
+                            pickFromFiles.launch("image/*")
+                        }
+                )
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
 }
 
-/**
- * Campo reutilizable para los datos del perfil
- */
 @Composable
-fun PerfilTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun PerfilField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+        singleLine = true,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Start),
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = Color.Gray
-        )
+            .padding(bottom = 10.dp)
     )
+}
+
+/** Guarda un Bitmap en MediaStore y devuelve su Uri pública (Pictures/MrPastel). */
+private fun saveBitmapToGallery(
+    context: Context,
+    bitmap: Bitmap,
+    displayName: String
+): Uri? {
+    val resolver = context.contentResolver
+    val values = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MrPastel")
+        put(MediaStore.Images.Media.IS_PENDING, 1)
+    }
+    val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    val itemUri = resolver.insert(collection, values) ?: return null
+    resolver.openOutputStream(itemUri)?.use { out ->
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+    }
+    values.clear()
+    values.put(MediaStore.Images.Media.IS_PENDING, 0)
+    resolver.update(itemUri, values, null, null)
+    return itemUri
 }
