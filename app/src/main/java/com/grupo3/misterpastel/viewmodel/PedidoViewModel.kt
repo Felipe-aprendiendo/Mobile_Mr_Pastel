@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
-import com.grupo3.misterpastel.repository.CarritoItem
+import com.grupo3.misterpastel.model.CarritoItem
 import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.EstadoPedido
 import kotlinx.coroutines.launch

@@ -9,8 +9,6 @@ import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.model.Pedido
-import com.grupo3.misterpastel.model.EstadoPedido
-import com.grupo3.misterpastel.repository.CarritoItem
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -24,7 +22,6 @@ class PerfilViewModel : ViewModel() {
 
     init {
         cargarDatosUsuario()
-        cargarPedidos()
     }
 
     /**
@@ -75,54 +72,4 @@ class PerfilViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Carga pedidos de ejemplo asociados al usuario actual.
-     */
-    private fun cargarPedidos() {
-        viewModelScope.launch {
-            val pedido1 = Pedido(
-                id = "P001",
-                userId = "U001",
-                fecha = System.currentTimeMillis() - 86400000, // hace 1 día
-                items = listOf(
-                    CarritoItem(
-                        producto = Producto(
-                            id = 1,
-                            nombre = "Torta de Chocolate",
-                            precio = "20000",
-                            imagen = R.drawable.ic_launcher_background,
-                            categoria = Categoria.TORTA_CIRCULAR,
-                            descripcion = "Torta clásica de chocolate"
-                        ),
-                        cantidad = 1
-                    )
-                ),
-                total = 20000.0,
-                estado = EstadoPedido.ENTREGADO
-            )
-
-            val pedido2 = Pedido(
-                id = "P002",
-                userId = "U001",
-                fecha = System.currentTimeMillis() - 43200000, // hace 12 horas
-                items = listOf(
-                    CarritoItem(
-                        producto = Producto(
-                            id = 2,
-                            nombre = "Cheesecake de Fresa",
-                            precio = "15000",
-                            imagen = R.drawable.ic_launcher_background,
-                            categoria = Categoria.POSTRE_INDIVIDUAL,
-                            descripcion = "Cheesecake con fresas naturales"
-                        ),
-                        cantidad = 1
-                    )
-                ),
-                total = 15000.0,
-                estado = EstadoPedido.EN_PREPARACION
-            )
-
-            _pedidos.value = listOf(pedido1, pedido2)
-        }
-    }
 }

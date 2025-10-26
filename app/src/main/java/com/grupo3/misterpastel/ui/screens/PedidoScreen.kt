@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Pedido
-import com.grupo3.misterpastel.repository.CarritoItem
+import com.grupo3.misterpastel.model.CarritoItem
 import com.grupo3.misterpastel.model.EstadoPedido
 import java.text.SimpleDateFormat
 import java.util.*
