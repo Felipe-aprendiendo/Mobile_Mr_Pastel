@@ -15,6 +15,8 @@ import com.grupo3.misterpastel.ui.screens.LoginScreen
 import com.grupo3.misterpastel.ui.screens.RegistroScreen
 import com.grupo3.misterpastel.ui.screens.splash.SplashScreen
 import com.grupo3.misterpastel.ui.screens.CarritoScreen
+import com.grupo3.misterpastel.ui.screens.ComprobantePagoScreen
+import com.grupo3.misterpastel.ui.screens.PagoProcesandoScreen
 import com.grupo3.misterpastel.ui.screens.PedidoScreen
 import com.grupo3.misterpastel.ui.screens.PerfilUsuarioScreen
 
@@ -43,5 +45,7 @@ fun AppNavigation(){
         composable("carrito") { CarritoScreen(navController) }
         composable("pedidos") { PedidoScreen(navController) }
         composable("perfil") { PerfilUsuarioScreen(navController) }
+        composable("procesando_pago") { PagoProcesandoScreen(navController) }
+        composable("comprobante_pago") { ComprobantePagoScreen(navController) }
     }
 }
