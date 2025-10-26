@@ -2,11 +2,14 @@ package com.grupo3.misterpastel.repository
 
 import android.content.Context
 import com.grupo3.misterpastel.model.CarritoItem
+import com.grupo3.misterpastel.model.ComprobantePago
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.subtotal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import java.text.SimpleDateFormat
+import java.util.*
 
 object CarritoRepository {
 
@@ -16,6 +19,12 @@ object CarritoRepository {
     private val _coupon = MutableStateFlow<String?>(null)
     val coupon: StateFlow<String?> = _coupon
 
+    private val _ultimoComprobante = MutableStateFlow<ComprobantePago?>(null)
+    val ultimoComprobante: StateFlow<ComprobantePago?> = _ultimoComprobante
+
+    // -------------------------------
+    // 🧾 Lógica de cupón y descuentos
+    // -------------------------------
     fun setCupon(codigo: String?) {
         _coupon.value = codigo?.takeIf { it.isNotBlank() }
     }
@@ -43,12 +52,9 @@ object CarritoRepository {
         _items.update { list ->
             val idx = list.indexOfFirst { it.producto.id == productoId }
             if (idx < 0) return@update list
-            if (cantidad <= 0) {
-                list.filterNot { it.producto.id == productoId }
-            } else {
-                list.toMutableList().apply {
-                    this[idx] = this[idx].copy(cantidad = cantidad)
-                }
+            if (cantidad <= 0) list.filterNot { it.producto.id == productoId }
+            else list.toMutableList().apply {
+                this[idx] = this[idx].copy(cantidad = cantidad)
             }
         }
     }
@@ -59,44 +65,86 @@ object CarritoRepository {
 
     fun totalBruto(): Double = _items.value.sumOf { it.subtotal() }
 
-    /**
-     * Política de descuentos:
-     * 1) 100% si el correo termina en @duocuc.cl
-     * 2) 50% si edad >= 50
-     * 3) 10% si cupón FELICES50
-     */
-    fun totalConDescuento(
-        edadUsuario: Int?,
-        emailUsuario: String?,
-        cupon: String? = _coupon.value
-    ): Double {
-        val bruto = totalBruto()
-        if (bruto <= 0.0) return 0.0
+    fun totalConDescuento(edadUsuario: Int?, emailUsuario: String?, cupon: String?): Double {
+        val subtotal = totalBruto()
+        var totalFinal = subtotal
 
-        // 100% DUOC
-        if (!emailUsuario.isNullOrBlank() && emailUsuario.endsWith("@duocuc.cl", ignoreCase = true)) {
-            return 0.0
+        when {
+            !emailUsuario.isNullOrBlank() && emailUsuario.endsWith("@duocuc.cl", true) -> totalFinal = 0.0
+            (edadUsuario ?: 0) >= 50 -> totalFinal = subtotal * 0.5
+            cupon.equals("FELICES50", ignoreCase = true) -> totalFinal = subtotal * 0.9
         }
-        // 50% edad
-        if ((edadUsuario ?: 0) >= 50) {
-            return bruto * 0.5
-        }
-        // 10% cupón
-        if (cupon.equals("FELICES50", ignoreCase = true)) {
-            return bruto * 0.9
-        }
-        return bruto
+
+        return totalFinal
     }
 
-    // ---- Confirmación de pedido (opcional) ----
-    fun confirmarPedido(context: Context, onSuccess: () -> Unit = {}) {
-        // Si usas un helper de notificaciones, descomenta/ajusta:
-        // NotificationHelper.showSimpleNotification(
-        //    context = context,
-        //    title = "Pedido confirmado",
-        //    message = "¡Gracias por tu compra! Estamos preparando tu pedido 🍰"
-        // )
+    // -------------------------------------------
+    // 🧮 Cálculo del resumen y generación comprob.
+    // -------------------------------------------
+    data class ResumenPago(
+        val subtotal: Double,
+        val descuentoEtiqueta: String,
+        val descuentoMonto: Double,
+        val totalFinal: Double
+    )
+
+    private fun calcularResumenPago(edadUsuario: Int?, emailUsuario: String?, cupon: String?): ResumenPago {
+        val subtotal = totalBruto()
+        var descuentoEtiqueta = "0%"
+        var totalFinal = subtotal
+
+        when {
+            !emailUsuario.isNullOrBlank() && emailUsuario.endsWith("@duocuc.cl", true) -> {
+                descuentoEtiqueta = "100% (DUOC)"
+                totalFinal = 0.0
+            }
+            (edadUsuario ?: 0) >= 50 -> {
+                descuentoEtiqueta = "50% (edad)"
+                totalFinal = subtotal * 0.5
+            }
+            cupon.equals("FELICES50", ignoreCase = true) -> {
+                descuentoEtiqueta = "10% (cupón)"
+                totalFinal = subtotal * 0.9
+            }
+        }
+
+        val descuentoMonto = subtotal - totalFinal
+        return ResumenPago(subtotal, descuentoEtiqueta, descuentoMonto, totalFinal)
+    }
+
+    private fun generarIdComprobante(): String {
+        val formato = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault())
+        return "PED-${formato.format(Date())}"
+    }
+
+    fun confirmarPedidoYGuardarComprobante(
+        usuarioNombre: String,
+        usuarioEmail: String,
+        edadUsuario: Int?,
+        metodoPago: String = "Tarjeta de crédito"
+    ): ComprobantePago {
+        val snapshot = _items.value.toList()
+        val resumen = calcularResumenPago(edadUsuario, usuarioEmail, _coupon.value)
+
+        val comprobante = ComprobantePago(
+            idComprobante = generarIdComprobante(),
+            usuarioNombre = usuarioNombre,
+            usuarioEmail = usuarioEmail,
+            fechaHoraMillis = System.currentTimeMillis(),
+            items = snapshot,
+            subtotal = resumen.subtotal,
+            descuentoEtiqueta = resumen.descuentoEtiqueta,
+            descuentoMonto = resumen.descuentoMonto,
+            totalFinal = resumen.totalFinal,
+            metodoPago = metodoPago
+        )
+
+        _ultimoComprobante.value = comprobante
         vaciar()
-        onSuccess()
+        return comprobante
+    }
+
+    fun limpiarComprobante() {
+        _ultimoComprobante.value = null
     }
 }
