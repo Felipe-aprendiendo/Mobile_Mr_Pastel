@@ -14,14 +14,24 @@ class CarritoViewModel : ViewModel() {
     private val _total = MutableLiveData<Double>(0.0)
     val total: LiveData<Double> = _total
 
-    fun agregarProducto(producto: Producto) {
+    fun getCantidad(producto: Producto): Int {
+        return _carritoItems.value?.find { it.producto.id == producto.id }?.cantidad ?: 0
+    }
+
+    fun setCantidad(producto: Producto, cantidad: Int) {
         val listaActual = _carritoItems.value?.toMutableList() ?: mutableListOf()
         val itemExistente = listaActual.find { it.producto.id == producto.id }
 
         if (itemExistente != null) {
-            itemExistente.cantidad++
+            if (cantidad > 0) {
+                itemExistente.cantidad = cantidad
+            } else {
+                listaActual.remove(itemExistente)
+            }
         } else {
-            listaActual.add(CarritoItem(producto = producto, cantidad = 1))
+            if (cantidad > 0) {
+                listaActual.add(CarritoItem(producto = producto, cantidad = cantidad))
+            }
         }
 
         _carritoItems.value = listaActual
@@ -35,19 +45,8 @@ class CarritoViewModel : ViewModel() {
         actualizarTotal()
     }
 
-    fun modificarCantidad(carritoItem: CarritoItem, nuevaCantidad: Int) {
-        val listaActual = _carritoItems.value?.toMutableList() ?: mutableListOf()
-        val itemEnLista = listaActual.find { it.producto.id == carritoItem.producto.id }
-
-        if (itemEnLista != null) {
-            if (nuevaCantidad > 0) {
-                itemEnLista.cantidad = nuevaCantidad
-            } else {
-                listaActual.remove(itemEnLista)
-            }
-        }
-
-        _carritoItems.value = listaActual
+    fun vaciarCarrito() {
+        _carritoItems.value = emptyList()
         actualizarTotal()
     }
 
