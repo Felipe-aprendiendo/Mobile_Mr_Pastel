@@ -26,12 +26,13 @@ import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun DetalleProductoScreen(
-    navController: NavController, 
+    navController: NavController,
     productoId: Int,
     catalogoViewModel: CatalogoViewModel = viewModel(),
     carritoViewModel: CarritoViewModel = viewModel()
 ) {
-    val producto by remember(productoId) { mutableStateOf(catalogoViewModel.getProductoById(productoId)) }
+    // Obtenemos el producto una sola vez por id
+    val producto = remember(productoId) { catalogoViewModel.getProductoById(productoId) }
 
     if (producto == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -39,15 +40,17 @@ fun DetalleProductoScreen(
         }
         return
     }
-    
-    val cantidad by remember(producto) { mutableStateOf(carritoViewModel.getCantidad(producto!!)) }
+
+    // Observamos el carrito compartido y derivamos la cantidad del producto
+    val items by carritoViewModel.items.collectAsState()
+    val cantidad = items.firstOrNull { it.producto.id == productoId }?.cantidad ?: 0
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = producto!!.nombre,
+                        text = producto.nombre,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -70,35 +73,39 @@ fun DetalleProductoScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = producto!!.imagen),
-                contentDescription = producto!!.nombre,
+                painter = painterResource(id = producto.imagen),
+                contentDescription = producto.nombre,
                 modifier = Modifier
                     .size(250.dp)
                     .padding(8.dp)
             )
+
             Text(
-                text = producto!!.nombre,
+                text = producto.nombre,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(top = 8.dp)
             )
+
             Spacer(modifier = Modifier.height(12.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = producto!!.precio,
+                    text = producto.precio,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
                 )
+
                 AnimatedContent(targetState = cantidad) { cantidadActual ->
                     if (cantidadActual == 0) {
                         Button(
-                            onClick = { carritoViewModel.setCantidad(producto!!, 1) }
+                            onClick = { carritoViewModel.agregar(producto, 1) }
                         ) {
                             Text("Agregar")
                         }
@@ -108,19 +115,23 @@ fun DetalleProductoScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             OutlinedButton(
-                                onClick = { carritoViewModel.setCantidad(producto!!, cantidad - 1) },
+                                onClick = {
+                                    carritoViewModel.actualizarCantidad(producto.id, cantidadActual - 1)
+                                },
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
                                 Text("-", fontSize = 20.sp)
                             }
                             Text(
-                                text = cantidad.toString(),
+                                text = cantidadActual.toString(),
                                 fontSize = 18.sp,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.width(30.dp)
                             )
                             OutlinedButton(
-                                onClick = { carritoViewModel.setCantidad(producto!!, cantidad + 1) },
+                                onClick = {
+                                    carritoViewModel.actualizarCantidad(producto.id, cantidadActual + 1)
+                                },
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
                                 Text("+", fontSize = 20.sp)
@@ -129,15 +140,18 @@ fun DetalleProductoScreen(
                     }
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                text = producto!!.descripcion,
+                text = producto.descripcion,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground,
                 lineHeight = 22.sp,
                 textAlign = TextAlign.Justify,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

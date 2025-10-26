@@ -1,8 +1,5 @@
 package com.grupo3.misterpastel.ui.screens
 
-
-
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,72 +13,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.grupo3.misterpastel.model.Producto
+import com.grupo3.misterpastel.model.subtotal
+import com.grupo3.misterpastel.viewmodel.CarritoViewModel
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CarritoScreen(navController: NavController) {
+fun CarritoScreen(
+    navController: NavController,
+    vm: CarritoViewModel = viewModel()
+) {
+    val items by vm.items.collectAsState()
+    val coupon by vm.coupon.collectAsState()
 
-    // TODO: Conectar con ViewModel del carrito
-    // En el futuro, esta lista de productos no será fija,
-    // sino que debe obtener desde un ViewModel que mantenga el estado global del carrito.
-    // val viewModel: CarritoViewModel = viewModel()
-    // val productosCarrito by viewModel.productos.collectAsState()
-    // Esto permite que si el usuario agrega o quita productos desde otra pantalla,
-    // la lista se actualice automáticamente aquí.
+    // Si ya tienes estos datos en la sesión, asígnalos acá:
+    // vm.edadUsuario = usuario?.edad
+    // vm.emailUsuario = usuario?.email
 
-    val productosCarrito = remember {
-        mutableStateListOf(
-            Producto(1, "Torta Cuadrada de Chocolate", "$45.000 CLP", com.grupo3.misterpastel.R.drawable.torta_chocolate, com.grupo3.misterpastel.model.Categoria.TORTA_CUADRADA, "Deliciosa torta de chocolate."),
+    var codigoPromo by remember { mutableStateOf(coupon ?: "") }
+    val nf = remember { NumberFormat.getNumberInstance(Locale("es","CL")) }
 
-            Producto(2, "Empanada de Manzana", "$3.000 CLP", com.grupo3.misterpastel.R.drawable.empanada_manzana, com.grupo3.misterpastel.model.Categoria.PASTELERIA_TRADICIONAL, "Crujiente y dulce empanada artesanal.")
-        )
-    }
-
-
-
-
-    // TODO: Manejar cantidades desde el ViewModel
-    // Ahora las cantidades se guardan localmente, pero deberían venir desde el ViewModel
-    // que manejará un estado del tipo `MutableStateMap<Int, Int>` o lista de objetos ProductoCarrito.
-    // Ejemplo:
-    // val cantidades by viewModel.cantidades.collectAsState()
-    // Donde el ViewModel podría tener funciones como:
-    // fun aumentarCantidad(id: Int)
-    // fun disminuirCantidad(id: Int)
-    val cantidades = remember { mutableStateMapOf<Int, Int>() }
-    productosCarrito.forEach { producto ->
-        cantidades.putIfAbsent(producto.id, 1)
-    }
-
-
-
-
-    // TODO: Calcular descuentos y totales desde el ViewModel
-    // Los descuentos también deberían manejarse desde el ViewModel, de forma reactiva.
-    // Ejemplo:
-    // val descuento by viewModel.descuento.collectAsState()
-    // val total by viewModel.total.collectAsState()
-    // val totalConDescuento by viewModel.totalConDescuento.collectAsState()
-    // De esa manera, cada vez que el usuario cambie una cantidad,
-    // el total y los descuentos se recalculan automáticamente.
-    var descuentoBase = 0.1f // 10% de descuento de ejemplo
-
-
-    var codigoPromo by remember { mutableStateOf("") }
-    var promoValida by remember { mutableStateOf(false) }
-
-    // Si el código es "FELICES50", aplica un descuento adicional del 5%
-    val descuentoAdicional = if (promoValida) 0.1f else 0f
-    val descuentoTotal = descuentoBase + descuentoAdicional
-
-    // Cálculo manual del total
-    val total = productosCarrito.sumOf { producto ->
-        val precio = producto.precio.replace("$", "").replace(".", "").replace(" CLP", "").trim().toInt()
-        precio * (cantidades[producto.id] ?: 1)
-    }
-    val totalConDescuento = (total * (1 - descuentoTotal)).toInt()
+    val totalBruto = remember(items) { vm.totalBruto() }
+    val totalConDesc = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) { vm.totalConDescuento() }
 
     Scaffold(
         topBar = {
@@ -98,145 +54,125 @@ fun CarritoScreen(navController: NavController) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-
-
-
-            // TODO: Cargar productos dinámicamente desde el ViewModel
-            // Cuando uses ViewModel, esta sección debería observar la lista `productosCarrito`
-            // y actualizarse automáticamente con `LazyColumn(items = productosCarrito)`.
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(productosCarrito) { producto ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(12.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+            if (items.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Aún no agregas productos.")
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(items, key = { it.producto.id }) { item ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
-                            Column {
-                                Text(producto.nombre, fontWeight = FontWeight.Bold)
-                                Text(producto.precio, color = MaterialTheme.colorScheme.primary)
-                            }
-
-                            // === SELECTOR DE CANTIDAD ===
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                OutlinedButton(onClick = {
-                                    val actual = cantidades[producto.id] ?: 1
-                                    if (actual > 1) cantidades[producto.id] = actual - 1
-
-                                    // Ejemplo futuro:
-                                    // viewModel.disminuirCantidad(producto.id)
-                                }) {
-                                    Text("-")
+                                Column(Modifier.weight(1f)) {
+                                    Text(item.producto.nombre, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        "${nf.format(item.subtotal())} CLP",
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
 
-                                Text(
-                                    text = "${cantidades[producto.id]}",
-                                    fontSize = 16.sp,
-                                    textAlign = TextAlign.Center
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(onClick = {
+                                        vm.actualizarCantidad(item.producto.id, item.cantidad - 1)
+                                    }) { Text("-") }
 
-                                OutlinedButton(onClick = {
-                                    val actual = cantidades[producto.id] ?: 1
-                                    cantidades[producto.id] = actual + 1
+                                    Text(
+                                        text = "${item.cantidad}",
+                                        fontSize = 16.sp,
+                                        textAlign = TextAlign.Center
+                                    )
 
-                                    // Ejemplo futuro:
-                                    // viewModel.aumentarCantidad(producto.id)
-                                }) {
-                                    Text("+")
+                                    OutlinedButton(onClick = {
+                                        vm.actualizarCantidad(item.producto.id, item.cantidad + 1)
+                                    }) { Text("+") }
+
+                                    TextButton(onClick = { vm.eliminar(item.producto.id) }) {
+                                        Text("Quitar")
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-            // === CAMPO DE CÓDIGO PROMOCIONAL ===
-            OutlinedTextField(
-                value = codigoPromo,
-                onValueChange = { codigoPromo = it },
-                label = { Text("Código promocional") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = {
-                    promoValida = codigoPromo.equals("FELICES50", ignoreCase = true)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            ) {
-                Text(if (promoValida) "Código aplicado ✅" else "Aplicar código")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.End
-            ) {
-                Text(
-                    text = "Descuento aplicado: ${descuentoTotal * 100}%",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium
+                // Código promocional
+                OutlinedTextField(
+                    value = codigoPromo,
+                    onValueChange = { codigoPromo = it },
+                    label = { Text("Código promocional") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Text(
-                    text = "Total: $total CLP",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "Total con descuento: $totalConDescuento CLP",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+                Button(
+                    onClick = { vm.setCupon(codigoPromo) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Text(if ((coupon ?: "").equals("FELICES50", true)) "Código aplicado ✅" else "Aplicar código")
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
+                // Totales
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Total bruto: ${nf.format(totalBruto)} CLP",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
 
-            // TODO: Implementar acción de pago desde ViewModel
-            // Cuando integres el flujo de pago, el ViewModel debe tener una función
-            // que prepare los datos del pedido o boleta.
-            //
-            // Ejemplo:
-            // viewModel.procesarPago()
-            //TODO: Redirigir a una pantalla de confirmación del pedido luego de pagar
+                    val etiquetaDesc = when {
+                        // Coincide con tu política
+                        (vm.emailUsuario ?: "").endsWith("@duocuc.cl", true) -> "Descuento aplicado: 100% (DUOC)"
+                        (vm.edadUsuario ?: 0) >= 50 -> "Descuento aplicado: 50% (edad)"
+                        (coupon ?: "").equals("FELICES50", true) -> "Descuento aplicado: 10% (cupón)"
+                        else -> "Descuento aplicado: 0%"
+                    }
+                    Text(
+                        text = etiquetaDesc,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
 
-            Button(
-                onClick = {
-                    // TODO: Llamar al ViewModel para procesar el pago
-                    // Ejemplo:
-                    // viewModel.procesarPago()
-                    //
-                    // Y luego navegar:
-                    // navController.navigate("confirmacionPago")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text("Proceder al pago", fontSize = 18.sp)
+                    Text(
+                        text = "Total a pagar: ${nf.format(totalConDesc)} CLP",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        // vm.confirmarPedido(context) si quieres,
+                        // y luego navController.navigate("confirmacion")
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                ) {
+                    Text("Proceder al pago", fontSize = 18.sp)
+                }
             }
         }
     }
