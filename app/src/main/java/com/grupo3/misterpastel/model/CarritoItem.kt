@@ -6,9 +6,5 @@ data class CarritoItem(
 )
 
 // Extensión para calcular subtotal (precio * cantidad)
-fun CarritoItem.subtotal(): Double = producto.precio
-    .replace("[^\\d.,]".toRegex(), "")
-    .replace(".", "")
-    .replace(",", ".")
-    .toDoubleOrNull()
-    ?.times(cantidad) ?: 0.0
+fun CarritoItem.subtotal(): Double = producto.precioDouble() * cantidad
+
