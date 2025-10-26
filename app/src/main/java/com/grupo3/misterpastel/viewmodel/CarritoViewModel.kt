@@ -31,4 +31,18 @@ class CarritoViewModel : ViewModel() {
 
     fun totalConDescuento(): Double =
         CarritoRepository.totalConDescuento(edadUsuario, emailUsuario, coupon.value)
+
+    fun pagar(usuarioId: String, nombre: String, email: String, edad: Int?, pedidoViewModel: PedidoViewModel) {
+        val comprobante = CarritoRepository.confirmarPedidoYGuardarComprobante(
+            usuarioNombre = nombre,
+            usuarioEmail = email,
+            edadUsuario = edad
+        )
+
+        // Guarda el pedido en Room
+        pedidoViewModel.registrarPedidoDesdeComprobante(usuarioId, comprobante)
+    }
+
+
+
 }

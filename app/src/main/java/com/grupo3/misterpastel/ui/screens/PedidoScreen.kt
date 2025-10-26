@@ -1,6 +1,5 @@
 package com.grupo3.misterpastel.ui.screens
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,79 +8,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Pedido
-import com.grupo3.misterpastel.model.CarritoItem
 import com.grupo3.misterpastel.model.EstadoPedido
+import com.grupo3.misterpastel.viewmodel.PedidoViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PedidoScreen(navController: NavController) {
-
-    // TODO: En el futuro, esto debe venir desde un ViewModel (por ejemplo: viewModel.getPedidos(userId))
-    // Por ahora, simulamos algunos pedidos pagados.
-    val pedidos = remember {
-        listOf(
-            Pedido(
-                id = "PED001",
-                userId = "U001",
-                fecha = System.currentTimeMillis() - 86400000L,
-                items = listOf(
-                    CarritoItem(
-                        producto = Producto(
-                            1,
-                            "Torta Chocolate",
-                            "$45.000 CLP",
-                            com.grupo3.misterpastel.R.drawable.torta_chocolate,
-                            com.grupo3.misterpastel.model.Categoria.TORTA_CUADRADA,
-                            "Deliciosa torta de chocolate artesanal."
-                        ),
-                        cantidad = 1
-                    ),
-                    CarritoItem(
-                        producto = Producto(
-                            2,
-                            "Mousse Frutilla",
-                            "$3.000 CLP",
-                            com.grupo3.misterpastel.R.drawable.mousse_chocolate,
-                            com.grupo3.misterpastel.model.Categoria.POSTRE_INDIVIDUAL,
-                            "Postre suave y cremoso de frutilla."
-                        ),
-                        cantidad = 2
-                    )
-                ),
-                total = 51000.0,
-                estado = EstadoPedido.ENTREGADO
-            ),
-            Pedido(
-                id = "PED002",
-                userId = "U001",
-                fecha = System.currentTimeMillis() - 604800000L,
-                items = listOf(
-                    CarritoItem(
-                        producto = Producto(
-                            3,
-                            "Torta Cumpleaños",
-                            "$55.000 CLP",
-                            com.grupo3.misterpastel.R.drawable.torta_cumple,
-                            com.grupo3.misterpastel.model.Categoria.TORTA_ESPECIAL,
-                            "Decoración personalizada y sabor a elección."
-                        ),
-                        cantidad = 1
-                    )
-                ),
-                total = 55000.0,
-                estado = EstadoPedido.EN_PREPARACION
-            )
-        )
-    }
+fun PedidoScreen(
+    navController: NavController,
+    pedidoViewModel: PedidoViewModel = viewModel()
+) {
+    val pedidos by pedidoViewModel.pedidos.observeAsState(emptyList())
 
     Scaffold(
         topBar = {
@@ -98,7 +44,6 @@ fun PedidoScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -106,20 +51,24 @@ fun PedidoScreen(navController: NavController) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            if (pedidos.isEmpty()) {
-                Text(
-                    text = "Aún no has realizado pedidos 🍰",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(pedidos) { pedido ->
-                        PedidoCard(pedido)
+            when {
+                pedidos.isEmpty() -> {
+                    Text(
+                        text = "Aún no has realizado pedidos 🍰",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(pedidos, key = { it.id }) { pedido ->
+                            PedidoCard(pedido)
+                        }
                     }
                 }
             }
@@ -144,7 +93,7 @@ fun PedidoCard(pedido: Pedido) {
                 .background(MaterialTheme.colorScheme.surface),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Cabecera con número de pedido y fecha
+            // Cabecera
             Text(
                 text = "Pedido Nº ${pedido.id}",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -152,7 +101,7 @@ fun PedidoCard(pedido: Pedido) {
             )
             Text("Fecha: $fechaFormateada")
 
-            // Estado del pedido — usa colores distintos según estado
+            // Estado con color dinámico
             Text(
                 text = "Estado: ${pedido.estado.name}",
                 color = when (pedido.estado) {
@@ -166,7 +115,7 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Listado de productos dentro del pedido
+            // Productos del pedido
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 pedido.items.forEach { item ->
                     Row(
@@ -181,7 +130,7 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Total final
+            // Total
             Text(
                 text = "Total: $${pedido.total}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
