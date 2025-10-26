@@ -63,4 +63,6 @@ dependencies {
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // 🔐 BCrypt para hashear contraseñas
+    implementation("org.mindrot:jbcrypt:0.4")
 }
