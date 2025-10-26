@@ -17,24 +17,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.subtotal
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
+import com.grupo3.misterpastel.viewmodel.PagoViewModel
 import java.text.NumberFormat
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarritoScreen(
     navController: NavController,
-    vm: CarritoViewModel = viewModel()
+    vm: CarritoViewModel = viewModel(),
+    pagoVM: PagoViewModel = viewModel() // ✅ Se declara aquí, no dentro del botón
 ) {
     val items by vm.items.collectAsState()
     val coupon by vm.coupon.collectAsState()
 
-    // Si ya tienes estos datos en la sesión, asígnalos acá:
-    // vm.edadUsuario = usuario?.edad
-    // vm.emailUsuario = usuario?.email
-
     var codigoPromo by remember { mutableStateOf(coupon ?: "") }
-    val nf = remember { NumberFormat.getNumberInstance(Locale("es","CL")) }
+    val nf = remember { NumberFormat.getNumberInstance(Locale("es", "CL")) }
 
     val totalBruto = remember(items) { vm.totalBruto() }
     val totalConDesc = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) { vm.totalConDescuento() }
@@ -127,9 +125,16 @@ fun CarritoScreen(
                 )
                 Button(
                     onClick = { vm.setCupon(codigoPromo) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 ) {
-                    Text(if ((coupon ?: "").equals("FELICES50", true)) "Código aplicado ✅" else "Aplicar código")
+                    Text(
+                        if ((coupon ?: "").equals("FELICES50", true))
+                            "Código aplicado ✅"
+                        else
+                            "Aplicar código"
+                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -142,12 +147,12 @@ fun CarritoScreen(
                     )
 
                     val etiquetaDesc = when {
-                        // Coincide con tu política
                         (vm.emailUsuario ?: "").endsWith("@duocuc.cl", true) -> "Descuento aplicado: 100% (DUOC)"
                         (vm.edadUsuario ?: 0) >= 50 -> "Descuento aplicado: 50% (edad)"
                         (coupon ?: "").equals("FELICES50", true) -> "Descuento aplicado: 10% (cupón)"
                         else -> "Descuento aplicado: 0%"
                     }
+
                     Text(
                         text = etiquetaDesc,
                         color = MaterialTheme.colorScheme.primary,
@@ -164,12 +169,21 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                // ✅ Botón corregido
                 Button(
                     onClick = {
-                        // vm.confirmarPedido(context) si quieres,
-                        // y luego navController.navigate("confirmacion")
+                        val usuario = com.grupo3.misterpastel.repository.UsuarioRepository.usuarioActual.value
+                        if (usuario != null && items.isNotEmpty()) {
+                            pagoVM.iniciarPago(usuario.nombre, usuario.email, usuario.edad)
+                            navController.navigate("procesando_pago")
+                        } else {
+                            navController.navigate("login")
+                        }
                     },
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                    enabled = items.isNotEmpty(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
                 ) {
                     Text("Proceder al pago", fontSize = 18.sp)
                 }
