@@ -26,6 +26,7 @@ import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 import com.grupo3.misterpastel.viewmodel.SessionViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.ContentScale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -170,8 +171,7 @@ fun ProductoCard(producto: Producto, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp)
-            .clickable { navController.navigate("detalle/${producto.id}") },
+            .height(300.dp),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -187,8 +187,9 @@ fun ProductoCard(producto: Producto, navController: NavController) {
                 painter = painterResource(id = producto.imagen),
                 contentDescription = producto.nombre,
                 modifier = Modifier
-                    .size(120.dp)
-                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .height(150.dp), // Altura fija para la imagen
+                contentScale = ContentScale.Crop // Recorta para llenar
             )
             Text(
                 text = producto.nombre,
