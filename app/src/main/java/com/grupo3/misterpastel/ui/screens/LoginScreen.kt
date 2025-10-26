@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -15,17 +16,35 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.R
-import com.grupo3.misterpastel.viewmodel.AutenticarViewModel
+import com.grupo3.misterpastel.viewmodel.LoginViewModel
 
 @Composable
-fun LoginScreen(navController: NavController) {
-
-    // === ViewModel de autenticación ===
-    val autenticarViewModel: AutenticarViewModel = viewModel()
-    val isUserLoggedIn by autenticarViewModel.isLoggedIn.collectAsState()
+fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = viewModel()) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val loginState by loginViewModel.loginState.observeAsState()
+
+    LaunchedEffect(loginState) {
+        when (val state = loginState) {
+            is LoginViewModel.LoginState.Success -> {
+                navController.navigate("home_iniciada") {
+                    popUpTo("login") { inclusive = true }
+                }
+            }
+            is LoginViewModel.LoginState.Error -> {
+                error = state.message
+            }
+            is LoginViewModel.LoginState.Loading -> {
+                error = null // Limpiar errores anteriores al cargar
+            }
+            null -> {
+                error = null
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -38,7 +57,6 @@ fun LoginScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Logo principal
             Image(
                 painter = painterResource(id = R.drawable.logo_claro),
                 contentDescription = "Logo Pastelería 1000 Sabores",
@@ -51,20 +69,18 @@ fun LoginScreen(navController: NavController) {
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Campo de correo
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it; error = null },
                 label = { Text("Correo electrónico") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Campo de contraseña
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { password = it; error = null },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -72,36 +88,32 @@ fun LoginScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Botón principal
-            Button(
-                onClick = {
-                    /* TODO: esto está pendiente de implementar */
-                    // Aquí más adelante se llamará al ViewModel
-                    // por ahora solo navega de prueba
-
-                    // === Implementación provisional ===
-                    autenticarViewModel.iniciarSesion(email, password)
-
-                    // Si el login fue exitoso, redirigir a HomeSesionIniciada
-                    if (isUserLoggedIn) {
-                        navController.navigate("home_iniciada") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Ingresar")
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
-            // Enlace a registro
+            Button(
+                onClick = { loginViewModel.login(email, password) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = loginState !is LoginViewModel.LoginState.Loading
+            ) {
+                if (loginState is LoginViewModel.LoginState.Loading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text("Ingresar")
+                }
+            }
+
             TextButton(
                 onClick = { navController.navigate("registro") }
             ) {
                 Text("¿No tienes cuenta? Regístrate aquí")
             }
 
-            // Botón volver por si el cliente se equivcó y quiere solo volver
             OutlinedButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth()
