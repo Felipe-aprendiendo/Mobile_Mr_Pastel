@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Pedido
-import com.grupo3.misterpastel.repository.CarritoItem
-import com.grupo3.misterpastel.repository.EstadoPedido
+import com.grupo3.misterpastel.model.CarritoItem
+import com.grupo3.misterpastel.model.EstadoPedido
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -78,7 +78,7 @@ fun PedidoScreen(navController: NavController) {
                     )
                 ),
                 total = 55000.0,
-                estado = EstadoPedido.PREPARANDO
+                estado = EstadoPedido.EN_PREPARACION
             )
         )
     }
@@ -157,10 +157,10 @@ fun PedidoCard(pedido: Pedido) {
                 text = "Estado: ${pedido.estado.name}",
                 color = when (pedido.estado) {
                     EstadoPedido.PENDIENTE -> MaterialTheme.colorScheme.tertiary
-                    EstadoPedido.PREPARANDO -> MaterialTheme.colorScheme.secondary
-                    EstadoPedido.EN_CAMINO -> MaterialTheme.colorScheme.primary
+                    EstadoPedido.EN_PREPARACION -> MaterialTheme.colorScheme.secondary
+                    EstadoPedido.LISTO_PARA_RECOGER -> MaterialTheme.colorScheme.primary
                     EstadoPedido.ENTREGADO -> MaterialTheme.colorScheme.primary
-                    EstadoPedido.CANCELADO -> MaterialTheme.colorScheme.error
+                    EstadoPedido.FINALIZADO -> MaterialTheme.colorScheme.error
                 }
             )
 

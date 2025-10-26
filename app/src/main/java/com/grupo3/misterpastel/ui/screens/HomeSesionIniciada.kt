@@ -26,6 +26,9 @@ import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 import com.grupo3.misterpastel.viewmodel.SessionViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.ContentScale
+import com.grupo3.misterpastel.ui.components.ProductoCard
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,10 +93,18 @@ fun HomeSesionIniciada(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(productos) { producto ->
-                            ProductoCard(producto, navController)
+                        items(
+                            items = productos,
+                            key = { it.id } // clave estable para mejor performance
+                        ) { producto ->
+                            ProductoCard(
+                                producto = producto,
+                                onVerDetalles = { p -> navController.navigate("detalle/${p.id}") },
+                                modifier = Modifier.padding(8.dp)
+                            )
                         }
                     }
+
                 }
             }
         }
@@ -162,57 +173,5 @@ fun DrawerHeader(nombreUsuario: String) {
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.tertiary
         )
-    }
-}
-
-@Composable
-fun ProductoCard(producto: Producto, navController: NavController) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp)
-            .clickable { navController.navigate("detalle/${producto.id}") },
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(8.dp)
-                .fillMaxSize()
-        ) {
-            Image(
-                painter = painterResource(id = producto.imagen),
-                contentDescription = producto.nombre,
-                modifier = Modifier
-                    .size(120.dp)
-                    .padding(bottom = 8.dp)
-            )
-            Text(
-                text = producto.nombre,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-            )
-            Text(
-                text = producto.precio,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            )
-            OutlinedButton(onClick = { navController.navigate("detalle/${producto.id}") }) {
-                Text("Ver Detalles")
-            }
-        }
     }
 }

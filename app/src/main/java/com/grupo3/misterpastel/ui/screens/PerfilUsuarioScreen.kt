@@ -1,7 +1,16 @@
 package com.grupo3.misterpastel.ui.screens
 
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -10,56 +19,82 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.grupo3.misterpastel.model.Pedido
-import com.grupo3.misterpastel.viewmodel.PerfilViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.grupo3.misterpastel.R
+import com.grupo3.misterpastel.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerfilUsuarioScreen(navController: NavController, perfilViewModel: PerfilViewModel = viewModel()) {
+fun PerfilUsuarioScreen(
+    navController: NavController,
+    sessionViewModel: SessionViewModel = viewModel()
+) {
+    val usuarioActual by sessionViewModel.usuarioActual.collectAsState()
 
-    val usuario by perfilViewModel.usuario.observeAsState()
-    val pedidos by perfilViewModel.pedidos.observeAsState(initial = emptyList())
+    // Redirección si no hay sesión
+    LaunchedEffect(usuarioActual) {
+        if (usuarioActual == null) {
+            navController.navigate("login") {
+                popUpTo("perfil") { inclusive = true }
+            }
+        }
+    }
+    if (usuarioActual == null) return
 
-    var nombre by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var fechaNacimiento by remember { mutableStateOf("") }
-    var direccion by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var edad by remember { mutableIntStateOf(0) }
+    // Estado editable local (inicializado desde sesión)
+    var nombre by remember(usuarioActual) { mutableStateOf(usuarioActual!!.nombre) }
+    var email by remember(usuarioActual) { mutableStateOf(usuarioActual!!.email) }
+    var fechaNacimiento by remember(usuarioActual) { mutableStateOf(usuarioActual!!.fechaNacimiento) }
+    var direccion by remember(usuarioActual) { mutableStateOf(usuarioActual!!.direccion) }
+    var telefono by remember(usuarioActual) { mutableStateOf(usuarioActual!!.telefono) }
+    var fotoUrl by remember(usuarioActual) { mutableStateOf(usuarioActual!!.fotoUrl) }
 
-    LaunchedEffect(usuario) {
-        usuario?.let {
-            nombre = it.nombre
-            email = it.email
-            fechaNacimiento = it.fechaNacimiento
-            direccion = it.direccion
-            telefono = it.telefono
-            edad = it.edad
+    var showPicker by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current
+
+    // Launchers: galería y cámara (preview)
+    val pickFromFiles = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { selected ->
+            fotoUrl = selected.toString()
+            sessionViewModel.actualizarFoto(fotoUrl) { msg -> error = msg }
+        }
+    }
+
+    val takePhotoPreview = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bmp: Bitmap? ->
+        bmp?.let {
+            val saved = saveBitmapToGallery(
+                context = context,
+                bitmap = it,
+                displayName = "mr_pastel_profile_${System.currentTimeMillis()}.jpg"
+            )
+            fotoUrl = saved?.toString()
+            sessionViewModel.actualizarFoto(fotoUrl) { msg -> error = msg }
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi perfil 👤", fontWeight = FontWeight.Bold) },
+                title = { Text("Mi perfil \uD83E\uDDD1\u200D\uD83C\uDF73", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -71,7 +106,6 @@ fun PerfilUsuarioScreen(navController: NavController, perfilViewModel: PerfilVie
             )
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -81,131 +115,152 @@ fun PerfilUsuarioScreen(navController: NavController, perfilViewModel: PerfilVie
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            usuario?.let { user ->
-                if (user.fotoUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(user.fotoUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Foto de perfil",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(128.dp)
-                            .clip(CircleShape)
-                            .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(128.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = nombre.firstOrNull()?.toString()?.uppercase() ?: "?",
-                            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = { /* TODO: Implementar cambio de foto */ }
+            // === FOTO DE PERFIL ===
+            if (fotoUrl != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(fotoUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Foto de perfil",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(132.dp)
+                        .clip(CircleShape)
+                        .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                )
+            } else {
+                // Placeholder con logo
+                Box(
+                    modifier = Modifier
+                        .size(132.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("Cambiar foto")
+                    Image(
+                        painter = painterResource(id = R.drawable.logo_claro),
+                        contentDescription = "Foto de perfil no establecida",
+                        modifier = Modifier.size(76.dp)
+                    )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(10.dp))
 
-                PerfilTextField("Nombre", nombre) { nombre = it }
-                PerfilTextField("Correo electrónico", email) { email = it }
-                PerfilTextField("Fecha de nacimiento", fechaNacimiento) { fechaNacimiento = it }
-                PerfilTextField("Dirección", direccion) { direccion = it }
-                PerfilTextField("Teléfono", telefono) { telefono = it }
+            OutlinedButton(onClick = { showPicker = true }) {
+                Text("Cambiar foto")
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(18.dp))
 
-                Button(
-                    onClick = {
-                        perfilViewModel.actualizarDatosUsuario(
-                            nombre = nombre,
-                            email = email,
-                            edad = edad,
-                            fechaNacimiento = fechaNacimiento,
-                            direccion = direccion,
-                            telefono = telefono,
-                            password = user.password
-                        )
-                    },
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+
+            PerfilField("Nombre", nombre) { nombre = it }
+            PerfilField("Correo electrónico", email) { email = it }
+            PerfilField("Fecha de nacimiento", fechaNacimiento) { fechaNacimiento = it }
+            PerfilField("Dirección", direccion) { direccion = it }
+            PerfilField("Teléfono", telefono) { telefono = it }
+
+            Spacer(Modifier.height(22.dp))
+
+            Button(
+                onClick = {
+                    val actualizado = usuarioActual!!.copy(
+                        nombre = nombre.trim(),
+                        email = email.trim(),
+                        fechaNacimiento = fechaNacimiento.trim(),
+                        direccion = direccion.trim(),
+                        telefono = telefono.trim(),
+                        fotoUrl = fotoUrl
+                    )
+                    sessionViewModel.actualizarPerfil(actualizado) { msg -> error = msg }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Text("Guardar cambios")
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+
+        }
+
+        // BottomSheet para elegir cámara o archivos
+        if (showPicker) {
+            ModalBottomSheet(onDismissRequest = { showPicker = false }) {
+                ListItem(
+                    headlineContent = { Text("Usar cámara") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Text("Guardar cambios", fontSize = 18.sp)
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text("Historial de Pedidos", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (pedidos.isEmpty()) {
-                    Text("No tienes pedidos anteriores.")
-                } else {
-                    pedidos.forEach { pedido ->
-                        PedidoItem(pedido)
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-
-            } ?: run {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        .clickable {
+                            showPicker = false
+                            takePhotoPreview.launch(null)
+                        }
+                )
+                ListItem(
+                    headlineContent = { Text("Elegir desde archivos") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showPicker = false
+                            pickFromFiles.launch("image/*")
+                        }
+                )
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
 }
 
 @Composable
-fun PedidoItem(pedido: Pedido) {
-    val formattedDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(pedido.fecha))
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Pedido #${pedido.id}", fontWeight = FontWeight.Bold)
-            Text("Fecha: $formattedDate")
-            Text("Total: $${String.format("%.2f", pedido.total)}")
-            Text("Estado: ${pedido.estado}")
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Artículos:", fontWeight = FontWeight.SemiBold)
-            pedido.items.forEach { item ->
-                Text("- ${item.producto.nombre} (x${item.cantidad})")
-            }
-        }
-    }
-}
-
-@Composable
-fun PerfilTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun PerfilField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+        singleLine = true,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Start),
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = Color.Gray
-        )
+            .padding(bottom = 10.dp)
     )
+}
+
+/** Guarda un Bitmap en MediaStore y devuelve su Uri pública (Pictures/MrPastel). */
+private fun saveBitmapToGallery(
+    context: Context,
+    bitmap: Bitmap,
+    displayName: String
+): Uri? {
+    val resolver = context.contentResolver
+    val values = ContentValues().apply {
+        put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/MrPastel")
+        put(MediaStore.Images.Media.IS_PENDING, 1)
+    }
+    val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+    val itemUri = resolver.insert(collection, values) ?: return null
+    resolver.openOutputStream(itemUri)?.use { out ->
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+    }
+    values.clear()
+    values.put(MediaStore.Images.Media.IS_PENDING, 0)
+    resolver.update(itemUri, values, null, null)
+    return itemUri
 }
