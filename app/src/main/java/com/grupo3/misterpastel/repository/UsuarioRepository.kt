@@ -6,15 +6,19 @@ import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
 
 /**
- * Simula registro/login de usuarios en memoria.
- * Si luego agregan DataStore, solo reemplazan el backend de estas funciones.
+ * Repositorio que gestiona usuarios simulando un backend en memoria.
+ * Compatible con AutenticarViewModel y futuras implementaciones con Room o DataStore.
  */
 object UsuarioRepository {
 
+    // Lista de usuarios simulados
     private val usuarios = mutableListOf<Usuario>()
-    private val _usuarioActual = MutableStateFlow<Usuario?>(null)
+
+    // Usuario actualmente autenticado (flujo observable)
+    internal val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual
 
+    // === REGISTRO DE USUARIO ===
     fun registrar(
         nombre: String,
         email: String,
@@ -46,7 +50,17 @@ object UsuarioRepository {
         return Result.success(nuevo)
     }
 
+    // === LOGIN ===
+    // Mantiene compatibilidad con el ViewModel de autenticación (buscarPorCredenciales)
+    fun buscarPorCredenciales(email: String, password: String): Usuario? {
+        val usuario = usuarios.find {
+            it.email.equals(email, ignoreCase = true) && it.password == password
+        }
+        _usuarioActual.value = usuario
+        return usuario
+    }
 
+    // Alias alternativo si se usa directamente en otras pantallas
     fun login(email: String, password: String): Result<Usuario> {
         val u = usuarios.find { it.email.equals(email, ignoreCase = true) && it.password == password }
             ?: return Result.failure(IllegalArgumentException("Credenciales inválidas"))
@@ -54,10 +68,15 @@ object UsuarioRepository {
         return Result.success(u)
     }
 
-    fun logout() {
+    // === CERRAR SESIÓN ===
+    fun cerrarSesion() {
         _usuarioActual.value = null
     }
 
+    // Alias alternativo
+    fun logout() = cerrarSesion()
+
+    // === ACTUALIZAR PERFIL ===
     fun actualizarPerfil(usuarioActualizado: Usuario): Result<Unit> {
         val idx = usuarios.indexOfFirst { it.id == usuarioActualizado.id }
         if (idx == -1) return Result.failure(IllegalArgumentException("Usuario no encontrado"))

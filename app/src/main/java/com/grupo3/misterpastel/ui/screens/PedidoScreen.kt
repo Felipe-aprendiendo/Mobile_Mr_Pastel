@@ -17,6 +17,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.EstadoPedido
+import com.grupo3.misterpastel.repository.UsuarioRepository
 import com.grupo3.misterpastel.viewmodel.PedidoViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -27,6 +28,14 @@ fun PedidoScreen(
     navController: NavController,
     pedidoViewModel: PedidoViewModel = viewModel()
 ) {
+    // ✅ Cargar pedidos del usuario autenticado al abrir la pantalla
+    LaunchedEffect(Unit) {
+        val usuario = UsuarioRepository.usuarioActual.value
+        if (usuario != null) {
+            pedidoViewModel.setUserId(usuario.id)
+        }
+    }
+
     val pedidos by pedidoViewModel.pedidos.observeAsState(emptyList())
 
     Scaffold(
@@ -93,7 +102,7 @@ fun PedidoCard(pedido: Pedido) {
                 .background(MaterialTheme.colorScheme.surface),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Cabecera
+            // 🧾 Cabecera del pedido
             Text(
                 text = "Pedido Nº ${pedido.id}",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -101,7 +110,7 @@ fun PedidoCard(pedido: Pedido) {
             )
             Text("Fecha: $fechaFormateada")
 
-            // Estado con color dinámico
+            // 🟢 Estado dinámico con color según el progreso
             Text(
                 text = "Estado: ${pedido.estado.name}",
                 color = when (pedido.estado) {
@@ -115,7 +124,7 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Productos del pedido
+            // 📦 Productos del pedido
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 pedido.items.forEach { item ->
                     Row(
@@ -130,7 +139,7 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Total
+            // 💰 Total
             Text(
                 text = "Total: $${pedido.total}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),

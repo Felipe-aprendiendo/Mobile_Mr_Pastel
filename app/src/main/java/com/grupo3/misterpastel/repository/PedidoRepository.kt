@@ -1,7 +1,7 @@
 package com.grupo3.misterpastel.repository
 
-
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
 import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.CarritoItem
@@ -28,6 +28,7 @@ class PedidoRepository(private val context: Context) {
         val itemsList = try {
             gson.fromJson(itemsJson, Array<CarritoItem>::class.java)?.toList() ?: emptyList()
         } catch (e: Exception) {
+            Log.e("PedidoRepository", "Error al convertir JSON de items", e)
             emptyList()
         }
 
@@ -54,7 +55,7 @@ class PedidoRepository(private val context: Context) {
         )
     }
 
-    // 🔹 Flujo general de todos los pedidos (para debugging o admin)
+    // 🔹 Flujo general de todos los pedidos
     fun obtenerPedidos(): Flow<List<Pedido>> =
         pedidoDao.obtenerTodosLosPedidos().map { list -> list.map { it.toModel() } }
 
@@ -65,6 +66,7 @@ class PedidoRepository(private val context: Context) {
     // 🔹 Inserta un pedido directamente
     suspend fun insertarPedido(pedido: Pedido) = withContext(Dispatchers.IO) {
         pedidoDao.insertarPedido(pedido.toEntity())
+        Log.d("PedidoRepository", "Pedido insertado manualmente con ID ${pedido.id}")
     }
 
     // 🔹 Crea un pedido a partir de un comprobante de pago
@@ -72,6 +74,11 @@ class PedidoRepository(private val context: Context) {
         userId: String,
         comprobante: ComprobantePago
     ) = withContext(Dispatchers.IO) {
+        if (userId.isBlank()) {
+            Log.e("PedidoRepository", "⚠️ El userId está vacío. No se guardará el pedido.")
+            return@withContext
+        }
+
         val nuevoPedido = Pedido(
             id = comprobante.idComprobante,
             userId = userId,
@@ -80,6 +87,8 @@ class PedidoRepository(private val context: Context) {
             total = comprobante.totalFinal,
             estado = EstadoPedido.PENDIENTE
         )
+
         pedidoDao.insertarPedido(nuevoPedido.toEntity())
+        Log.d("PedidoRepository", "✅ Pedido insertado en Room para usuario $userId")
     }
 }
