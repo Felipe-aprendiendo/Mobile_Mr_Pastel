@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.StateFlow
 
 class PagoViewModel : ViewModel() {
 
-    // 🧾 Comprobante actual (se usa para mostrar la boleta después del pago)
+    // Comprobante actual (se usa para mostrar la boleta después del pago)
     private val _comprobante = MutableStateFlow<ComprobantePago?>(null)
     val comprobante: StateFlow<ComprobantePago?> = _comprobante
 
-    /**
+    /**IMPORTANTE
      * Inicia el pago generando el comprobante desde el CarritoRepository.
      * Esta función es opcional si el pago se maneja desde CarritoViewModel.
      */
@@ -25,16 +25,14 @@ class PagoViewModel : ViewModel() {
         _comprobante.value = nuevoComprobante
     }
 
-    /**
-     * Guarda manualmente un comprobante generado desde CarritoViewModel.
-     */
+
+     //Guarda manualmente un comprobante generado desde CarritoViewModel.
+
     fun setComprobante(comprobante: ComprobantePago) {
         _comprobante.value = comprobante
     }
 
-    /**
-     * Limpia el comprobante tras mostrarlo o salir del comprobante de pago.
-     */
+
     fun limpiarComprobante() {
         CarritoRepository.limpiarComprobante()
         _comprobante.value = null

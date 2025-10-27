@@ -17,7 +17,7 @@ import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
-/**
+/**IMPORTANTE
  * Estado que representa los datos del formulario de registro.
  * Vive en el ViewModel para sobrevivir a cambios de configuración.
  */

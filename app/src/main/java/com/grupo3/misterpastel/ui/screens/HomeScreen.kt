@@ -32,25 +32,22 @@ fun HomeScreen(navController: NavController) {
             // 3. Aplica el modificador verticalScroll a la Columna
             modifier = Modifier
                 .verticalScroll(scrollState)
-                .fillMaxWidth(), // Es buena idea añadir fillMaxWidth también
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Logo principal
             Image(
                 painter = painterResource(id = R.drawable.logo_claro),
                 contentDescription = "Logo Pastelería Mister Pastel",
                 modifier = Modifier.size(250.dp)
             )
 
-            // Título de bienvenida
             Text(
                 text = "¡Bienvenido a Pastelería Mister Pastel!",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // Botón para iniciar sesión
             Button(
                 onClick = { navController.navigate("login") },
                 modifier = Modifier.fillMaxWidth()
@@ -58,7 +55,6 @@ fun HomeScreen(navController: NavController) {
                 Text("Iniciar Sesión")
             }
 
-            // Botón para registrarse
             OutlinedButton(
                 onClick = { navController.navigate("registro") },
                 modifier = Modifier.fillMaxWidth()
@@ -66,7 +62,6 @@ fun HomeScreen(navController: NavController) {
                 Text("Crear Cuenta")
             }
 
-            // Botón para ver el catálogo sin iniciar sesión
             OutlinedButton(
                 onClick = {
                     navController.navigate("home_iniciada")

@@ -14,16 +14,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Gestiona el almacenamiento y recuperación de pedidos
- * desde la base de datos local (Room).
- */
+
+ //Gestiona el almacenamiento y recuperación de pedidos desde la base de datos local (Room).
+
 class PedidoRepository(private val context: Context) {
 
     private val pedidoDao = AppDatabase.getDatabase(context).pedidoDao()
     private val gson = Gson()
 
-    // 🔹 Convierte la entidad Room en el modelo Pedido para la UI
+    // Convierte la entidad Room en el modelo Pedido para la UI
     private fun PedidoEntity.toModel(): Pedido {
         val itemsList = try {
             gson.fromJson(itemsJson, Array<CarritoItem>::class.java)?.toList() ?: emptyList()
@@ -42,7 +41,7 @@ class PedidoRepository(private val context: Context) {
         )
     }
 
-    // 🔹 Convierte un Pedido en la entidad Room para guardarlo
+    // Convierte un Pedido en la entidad Room para guardarlo
     private fun Pedido.toEntity(): PedidoEntity {
         val json = gson.toJson(items)
         return PedidoEntity(
@@ -55,21 +54,21 @@ class PedidoRepository(private val context: Context) {
         )
     }
 
-    // 🔹 Flujo general de todos los pedidos
+    // Flujo general de todos los pedidos
     fun obtenerPedidos(): Flow<List<Pedido>> =
         pedidoDao.obtenerTodosLosPedidos().map { list -> list.map { it.toModel() } }
 
-    // 🔹 Flujo filtrado por usuario
+    // Flujo filtrado por usuario
     fun obtenerPedidosPorUsuario(userId: String): Flow<List<Pedido>> =
         pedidoDao.obtenerPedidosPorUsuario(userId).map { list -> list.map { it.toModel() } }
 
-    // 🔹 Inserta un pedido directamente
+    // Inserta un pedido directamente
     suspend fun insertarPedido(pedido: Pedido) = withContext(Dispatchers.IO) {
         pedidoDao.insertarPedido(pedido.toEntity())
         Log.d("PedidoRepository", "Pedido insertado manualmente con ID ${pedido.id}")
     }
 
-    // 🔹 Crea un pedido a partir de un comprobante de pago
+    // Crea un pedido a partir de un comprobante de pago
     suspend fun insertarPedidoDesdeComprobante(
         userId: String,
         comprobante: ComprobantePago

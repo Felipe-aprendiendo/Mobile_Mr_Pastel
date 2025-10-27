@@ -14,10 +14,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * MOD (importante):
+ * IMPORTANTE:
  * - Antes era un object en memoria. Ahora es una clase Repository con Room y Singleton por contexto.
  * - Expone StateFlow<List<Producto>> alimentado desde Room.
- * - Si la tabla está vacía, siembra los 20 productos iniciales (seed).
+ * - Si la tabla está vacía, siembra los 20 productos iniciales.
  */
 class ProductoRepository private constructor(context: Context) {
 
@@ -28,8 +28,7 @@ class ProductoRepository private constructor(context: Context) {
     private val _productos = MutableStateFlow<List<Producto>>(emptyList())
     val productos: StateFlow<List<Producto>> = _productos
 
-    // === Catálogo inicial (semilla) ===
-    // (Se mantienen exactamente los mismos 20 productos originales)
+    // === Catálogo inicial  ===
     private val initialCatalog = listOf(
         // === TORTAS CLÁSICAS ===
         Producto(

@@ -36,14 +36,13 @@ fun RegistroScreen(
     navController: NavController,
     registroViewModel: RegistroViewModel = viewModel()
 ) {
-    // --- ¡MODIFICADO! ---
     // Leemos el estado del formulario (uiState) desde el ViewModel
     val uiState by registroViewModel.uiState.collectAsState()
 
     // El estado del proceso de registro (Loading, Error, Success) se mantiene
     val registrationState by registroViewModel.registrationState.collectAsState()
 
-    // --- ¡NUEVO! Estado local solo para controlar si el calendario se muestra ---
+    // Estado local solo para controlar si el calendario se muestra ---
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
 
@@ -85,7 +84,7 @@ fun RegistroScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            // --- ¡MODIFICADO! Todos los OutlinedTextField leen y escriben en el ViewModel ---
+            // Todos los OutlinedTextField leen y escriben en el ViewModel
             OutlinedTextField(
                 value = uiState.nombre,
                 onValueChange = registroViewModel::onNombreChange,
@@ -103,7 +102,7 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // --- ¡NUEVO! Implementación del DatePickerDialog ---
+            // Implementación del DatePickerDialog ---
             if (showDatePicker) {
                 DatePickerDialog(
                     onDismissRequest = { showDatePicker = false },
@@ -125,7 +124,7 @@ fun RegistroScreen(
                 }
             }
 
-            // --- ¡MODIFICADO! Campo de fecha (no editable, abre el calendario) ---
+            // Campo de fecha (no editable, abre el calendario) ---
             OutlinedTextField(
                 value = uiState.fechaNacimiento,
                 onValueChange = { /* No hace nada, es de solo lectura */ },
@@ -185,7 +184,6 @@ fun RegistroScreen(
             // Captura el estado actual en una variable local
             val regState = registrationState
 
-// Ahora usa la variable local en el 'if'
             if (regState is RegistroViewModel.RegistrationState.Error) {
                 Text(
                     text = regState.message, // <-- Usa la variable local 'regState'
@@ -198,7 +196,7 @@ fun RegistroScreen(
 
             Button(
                 onClick = {
-                    // --- ¡MODIFICADO! Llamada simple sin parámetros ---
+                    // Llamada simple sin parámetros ---
                     registroViewModel.register()
                 },
                 enabled = !isLoading,
@@ -223,7 +221,7 @@ fun RegistroScreen(
     }
 }
 
-// --- ¡NUEVO! Función Helper para formatear la fecha del calendario ---
+//Función Helper para formatear la fecha del calendario ---
 @RequiresApi(Build.VERSION_CODES.O)
 private fun convertMillisToDate(millis: Long): String {
     val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()

@@ -33,10 +33,10 @@ fun CarritoScreen(
     vm: CarritoViewModel = viewModel(),
     pedidoVM: PedidoViewModel = viewModel()
 ) {
-    // ✅ Contexto necesario para acceder a Room
+    // Contexto necesario para acceder a Room
     val context = LocalContext.current
 
-    // ✅ PagoViewModel compartido entre pantallas
+    // PagoViewModel compartido entre pantallas
     val parentEntry = remember(navController) {
         navController.getBackStackEntry("carrito")
     }
@@ -179,7 +179,7 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // ✅ Botón de pago con validación de sesión persistente
+                // Botón de pago con validación de sesión persistente
                 Button(
                     onClick = {
                         val usuarioRepo = UsuarioRepository.getInstance(context)

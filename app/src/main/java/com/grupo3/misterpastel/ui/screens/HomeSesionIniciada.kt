@@ -300,7 +300,6 @@ private fun CategoriaChipsRow(
     }
 }
 
-/** Si no lo tienes, puedes poner esta extensión junto a tu enum Categoria. */
 private fun Categoria.titulo(): String = when (this) {
     Categoria.TORTA_CUADRADA -> "Torta cuadrada"
     Categoria.TORTA_CIRCULAR -> "Torta circular"

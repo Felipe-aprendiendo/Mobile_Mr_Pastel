@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.repository.UsuarioRepository
 import kotlinx.coroutines.launch
 
-/**
+/**IMPORTANTE
  * ViewModel encargado del inicio de sesión del usuario.
  * Ahora usa Room a través del repositorio Singleton con contexto.
  */

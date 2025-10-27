@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 import org.mindrot.jbcrypt.BCrypt
 import java.util.UUID
 
-/**
+/**IMPORTANTE
  * Repositorio central de usuarios con persistencia en SQLite (Room).
  * Mantiene sincronía con los ViewModels existentes mediante StateFlow.
  */
@@ -36,7 +36,7 @@ class UsuarioRepository private constructor(private val context: Context) {
     }
 
     // ==============================
-    // 🔹 REGISTRO DE NUEVO USUARIO
+    // REGISTRO DE NUEVO USUARIO
     // ==============================
     suspend fun registrar(
         nombre: String,
@@ -83,7 +83,7 @@ class UsuarioRepository private constructor(private val context: Context) {
     }
 
     // ==============================
-    // 🔹 LOGIN DE USUARIO
+    // LOGIN DE USUARIO
     // ==============================
     suspend fun login(email: String, password: String): Result<Usuario> =
         withContext(Dispatchers.IO) {
@@ -110,14 +110,14 @@ class UsuarioRepository private constructor(private val context: Context) {
         }
 
     // ==============================
-    // 🔹 CERRAR SESIÓN
+    // CERRAR SESIÓN
     // ==============================
     fun logout() {
         _usuarioActual.value = null
     }
 
     // ==============================
-    // 🔹 ACTUALIZAR PERFIL
+    // ACTUALIZAR PERFIL
     // ==============================
     suspend fun actualizarPerfil(usuario: Usuario): Result<Unit> =
         withContext(Dispatchers.IO) {

@@ -23,14 +23,14 @@ import java.util.*
 @SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun ComprobantePagoScreen(navController: NavController) {
-    // ✅ Obtener el mismo PagoViewModel compartido desde "carrito"
+    // Obtener el mismo PagoViewModel compartido desde "carrito"
     val parentEntry = remember(navController) {
         navController.getBackStackEntry("carrito")
     }
     val vm: PagoViewModel = androidx.lifecycle.viewmodel.compose.viewModel(parentEntry)
     val comprobante by vm.comprobante.collectAsState()
 
-    // ✅ Validación temprana
+    // Validación temprana
     if (comprobante == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
@@ -95,7 +95,7 @@ fun ComprobantePagoScreen(navController: NavController) {
                 Divider(Modifier.padding(vertical = 12.dp))
             }
 
-            // ✅ Productos comprados (verificados)
+            // Productos comprados (verificados)
             if (itemsComprobante.isEmpty()) {
                 item {
                     Text(
@@ -131,7 +131,7 @@ fun ComprobantePagoScreen(navController: NavController) {
                 )
                 Spacer(Modifier.height(20.dp))
 
-                // ✅ Botón: volver al inicio
+                // Botón: volver al inicio
                 Button(
                     onClick = {
                         val success = navController.popBackStack("home_iniciada", false)
