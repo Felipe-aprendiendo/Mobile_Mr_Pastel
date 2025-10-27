@@ -2,7 +2,6 @@
 
 **Mil Sabores Mobile** es una aplicación Android desarrollada con **Kotlin + Jetpack Compose**, que digitaliza la experiencia de compra de la pastelería chilena *Mil Sabores*, ofreciendo un sistema moderno de e-commerce para tortas, repostería y pedidos personalizados.
 
-Este proyecto forma parte de la **Evaluación Parcial 2 (Grupo 3)** del curso **DSY1104**, integrando base de datos, lógica de negocio y diseño móvil.
 
 ---
 
@@ -27,13 +26,13 @@ Este proyecto forma parte de la **Evaluación Parcial 2 (Grupo 3)** del curso **
 
 El proyecto sigue el patrón **MVVM (Model - ViewModel - View)** + **Repository Pattern**.
 
-UI (Compose Screens)
-↓
-ViewModel (maneja estado y lógica de presentación)
-↓
-Repository (reglas de negocio y validaciones)
-↓
-Room (persistencia local: @Entity, @Dao, @Database)
+    UI (Compose Screens)
+    ↓
+    ViewModel (maneja estado y lógica de presentación)
+    ↓
+    Repository (reglas de negocio y validaciones)
+    ↓
+    Room (persistencia local: @Entity, @Dao, @Database)
 
 
 ---
@@ -105,43 +104,45 @@ Room (persistencia local: @Entity, @Dao, @Database)
 
 El sistema implementa **hashing de contraseñas** con **BCrypt** para garantizar la seguridad de los usuarios:
 
-Registro
-val hash = BCrypt.hashpw(password, BCrypt.gensalt())
-usuarioDao.insertarUsuario(UsuarioEntity(..., passwordHash = hash))
+    Registro
+    val hash = BCrypt.hashpw(password, BCrypt.gensalt())
+    usuarioDao.insertarUsuario(UsuarioEntity(..., passwordHash = hash))
+    
+    Login
+    val valido = BCrypt.checkpw(passwordIngresada, entity.passwordHash)
 
-Login
-val valido = BCrypt.checkpw(passwordIngresada, entity.passwordHash)
+     ├─ mipmap/   (iconos de la app)
+     └─ values/   (strings.xml, etc.)
 
- ├─ mipmap/   (iconos de la app)
- └─ values/   (strings.xml, etc.)
+---
 
-Las contraseñas nunca se almacenan en texto plano.
-
-##🗄️ Persistencia (Room Database)
+## 🗄️ Persistencia (Room Database)
 
 Entidades principales:
 
-ProductoEntity
-
-UsuarioEntity
-
-PedidoEntity
+    - ProductoEntity
+    
+    - UsuarioEntity
+    
+    - PedidoEntity
 
 Ejemplo de @Dao:
 
-@Dao
-interface ProductoDao {
-  @Insert(onConflict = REPLACE) suspend fun insertarProductos(list: List<ProductoEntity>)
-  @Query("SELECT * FROM producto") fun obtenerTodos(): Flow<List<ProductoEntity>>
-}
+    @Dao
+    interface ProductoDao {
+      @Insert(onConflict = REPLACE) suspend fun insertarProductos(list: List<ProductoEntity>)
+      @Query("SELECT * FROM producto") fun obtenerTodos(): Flow<List<ProductoEntity>>
+    }
+---
 
-##🧭 Navegación
+## 🧭 Navegación
 
 Se implementa con Navigation Compose (NavHost + NavController).
 
 Rutas: splash → home → login/registro → homeSesion → detalle → carrito → pago → comprobante → pedidos → perfil.
+---
 
-##📱 Funcionalidades nativas (Android)
+## 📱 Funcionalidades nativas
 
 Cámara: captura foto con ActivityResultContracts.TakePicturePreview().
 
@@ -151,55 +152,58 @@ Almacenamiento: se usa MediaStore para guardar imágenes en la galería (Picture
 
 Visualización: imágenes renderizadas con Coil (AsyncImage(uri)).
 
-##⚙️ Tecnologías
-Componente	Tecnología / Librería
-Lenguaje  	  Kotlin
-UI	          Jetpack Compose
-Arquitectura	MVVM + Repository
-Persistencia	Room Database
-Navegación	  Navigation Compose
-Hashing	      BCrypt
-Imágenes	    Coil
-Android       SDK	33+
-IDE	Android   Studio Koala 🐨
+---
+## ⚙️ Tecnologías
+- Componente	Tecnología / Librería
+- Lenguaje  	  Kotlin
+- UI	          Jetpack Compose
+- Arquitectura	MVVM + Repository
+- Persistencia	Room Database
+- Navegación	  Navigation Compose
+- Hashing	      BCrypt
+- Imágenes	    Coil
+- Android       SDK	33+
+- IDE	Android   Studio Koala 🐨
 
-##🧩 Flujo principal
+---
+## 🧩 Flujo principal
 
-El usuario abre la app (SplashScreen).
+- El usuario abre la app (SplashScreen).
 
-Si no ha iniciado sesión → LoginScreen / RegistroScreen.
+- Si no ha iniciado sesión → LoginScreen / RegistroScreen.
 
-Tras el login → HomeSesionIniciada (catálogo).
+- Tras el login → HomeSesionIniciada (catálogo).
 
-Puede ver detalles, agregar productos al carrito.
+- Puede ver detalles, agregar productos al carrito.
 
-Desde el carrito → aplicar cupón o pagar.
+- Desde el carrito → aplicar cupón o pagar.
 
-Genera un comprobante (ComprobantePago).
+- Genera un comprobante (ComprobantePago).
 
-El pedido se guarda en la base local (Room).
+- El pedido se guarda en la base local (Room).
 
-El usuario puede ver sus pedidos en PedidoScreen.
+- El usuario puede ver sus pedidos en PedidoScreen.
 
-En PerfilUsuarioScreen, puede cambiar su foto o datos.
+- En PerfilUsuarioScreen, puede cambiar su foto o datos.
 
-##📦 Instalación y ejecución
+---
+## 📦 Instalación y ejecución
 
-Clona el repositorio:
+- Clona el repositorio:
+    
+      git clone https://github.com/grupo3/milsabores-mobile.git
 
-git clone https://github.com/grupo3/milsabores-mobile.git
 
+- Ábrelo con Android Studio.
 
-Ábrelo con Android Studio.
+      Ejecuta en un emulador o dispositivo físico (API 33+).
 
-Ejecuta en un emulador o dispositivo físico (API 33+).
+- (Opcional) Limpia y reconstruye:
 
-(Opcional) Limpia y reconstruye:
-
-Build → Clean Project
-Build → Rebuild Project
-
-👥 Autores
+      Build → Clean Project
+      Build → Rebuild Project
+---
+## 👥 Autores
 
 Grupo 3 — Proyecto DSY1104: Mil Sabores
 
@@ -210,14 +214,15 @@ Integrante 2: Maximiliano Madrid
 Integrante 3: Omar Felipe
 
 
-
-🎂 Créditos
+---
+## 🎂 Créditos
 
 Desarrollado con ❤️ por estudiantes DUOC UC.
 Proyecto académico — no comercial.
 Inspirado en la pastelería Mil Sabores (Chile).
 
-🪶 Licencia
+---
+## 🪶 Licencia
 
 Este proyecto es de uso educativo.
 Puedes modificarlo y reutilizarlo con fines académicos, dando crédito al equipo original.
