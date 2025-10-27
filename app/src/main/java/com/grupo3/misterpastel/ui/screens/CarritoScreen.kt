@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.subtotal
+import com.grupo3.misterpastel.repository.UsuarioRepository
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
 import com.grupo3.misterpastel.viewmodel.PagoViewModel
 import com.grupo3.misterpastel.viewmodel.PedidoViewModel
@@ -31,7 +33,10 @@ fun CarritoScreen(
     vm: CarritoViewModel = viewModel(),
     pedidoVM: PedidoViewModel = viewModel()
 ) {
-    // ✅ PagoViewModel compartido
+    // ✅ Contexto necesario para acceder a Room
+    val context = LocalContext.current
+
+    // ✅ PagoViewModel compartido entre pantallas
     val parentEntry = remember(navController) {
         navController.getBackStackEntry("carrito")
     }
@@ -59,7 +64,8 @@ fun CarritoScreen(
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
@@ -79,14 +85,18 @@ fun CarritoScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(item.producto.nombre, fontWeight = FontWeight.Bold)
-                                    Text("${nf.format(item.subtotal())} CLP",
-                                        color = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        "${nf.format(item.subtotal())} CLP",
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
 
                                 Row(
@@ -97,7 +107,11 @@ fun CarritoScreen(
                                         vm.actualizarCantidad(item.producto.id, item.cantidad - 1)
                                     }) { Text("-") }
 
-                                    Text("${item.cantidad}", fontSize = 16.sp, textAlign = TextAlign.Center)
+                                    Text(
+                                        "${item.cantidad}",
+                                        fontSize = 16.sp,
+                                        textAlign = TextAlign.Center
+                                    )
 
                                     OutlinedButton(onClick = {
                                         vm.actualizarCantidad(item.producto.id, item.cantidad + 1)
@@ -121,9 +135,12 @@ fun CarritoScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 Button(
                     onClick = { vm.setCupon(codigoPromo) },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 ) {
                     Text(
                         if ((coupon ?: "").equals("FELICES50", true))
@@ -135,7 +152,10 @@ fun CarritoScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    Text("Total bruto: ${nf.format(totalBruto)} CLP", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Total bruto: ${nf.format(totalBruto)} CLP",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
 
                     val etiquetaDesc = when {
                         (vm.emailUsuario ?: "").endsWith("@duocuc.cl", true) -> "Descuento aplicado: 100% (DUOC)"
@@ -144,7 +164,11 @@ fun CarritoScreen(
                         else -> "Descuento aplicado: 0%"
                     }
 
-                    Text(etiquetaDesc, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        etiquetaDesc,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     Text(
                         "Total a pagar: ${nf.format(totalConDesc)} CLP",
                         fontSize = 20.sp,
@@ -155,9 +179,12 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                // ✅ Botón de pago con validación de sesión persistente
                 Button(
                     onClick = {
-                        val usuario = com.grupo3.misterpastel.repository.UsuarioRepository.usuarioActual.value
+                        val usuarioRepo = UsuarioRepository.getInstance(context)
+                        val usuario = usuarioRepo.usuarioActual.value
+
                         if (usuario != null && items.isNotEmpty()) {
                             val comprobante = vm.confirmarPedidoYGuardarComprobante(
                                 usuarioNombre = usuario.nombre,
@@ -168,11 +195,15 @@ fun CarritoScreen(
                             pagoVM.setComprobante(comprobante)
                             navController.navigate("procesando_pago")
                         } else {
+                            // Si no hay sesión activa, redirige al login
+                            vm.vaciar()
                             navController.navigate("login")
                         }
                     },
                     enabled = items.isNotEmpty(),
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
                 ) {
                     Text("Proceder al pago", fontSize = 18.sp)
                 }

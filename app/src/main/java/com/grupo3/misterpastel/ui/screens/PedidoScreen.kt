@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,11 +29,15 @@ fun PedidoScreen(
     navController: NavController,
     pedidoViewModel: PedidoViewModel = viewModel()
 ) {
-    // ✅ Cargar pedidos del usuario autenticado al abrir la pantalla
-    LaunchedEffect(Unit) {
-        val usuario = UsuarioRepository.usuarioActual.value
-        if (usuario != null) {
-            pedidoViewModel.setUserId(usuario.id)
+    // ✅ Contexto necesario para acceder a Room
+    val context = LocalContext.current
+    val usuarioRepo = remember { UsuarioRepository.getInstance(context) }
+    val usuarioActual by usuarioRepo.usuarioActual.collectAsState()
+
+    // ✅ Cargar pedidos del usuario autenticado cuando cambia
+    LaunchedEffect(usuarioActual) {
+        if (usuarioActual != null) {
+            pedidoViewModel.setUserId(usuarioActual!!.id)
         }
     }
 
@@ -61,6 +66,17 @@ fun PedidoScreen(
                 .padding(16.dp)
         ) {
             when {
+                // 🚫 Usuario no autenticado
+                usuarioActual == null -> {
+                    Text(
+                        text = "Inicia sesión para ver tus pedidos 🍰",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                // 📭 Sin pedidos registrados
                 pedidos.isEmpty() -> {
                     Text(
                         text = "Aún no has realizado pedidos 🍰",
@@ -70,6 +86,7 @@ fun PedidoScreen(
                     )
                 }
 
+                // ✅ Mostrar pedidos
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
