@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 object CarritoRepository {
 
     private val _items = MutableStateFlow<List<CarritoItem>>(emptyList())
@@ -18,6 +19,7 @@ object CarritoRepository {
 
     private val _coupon = MutableStateFlow<String?>(null)
     val coupon: StateFlow<String?> = _coupon
+
 
     private val _ultimoComprobante = MutableStateFlow<ComprobantePago?>(null)
     val ultimoComprobante: StateFlow<ComprobantePago?> = _ultimoComprobante
@@ -28,10 +30,12 @@ object CarritoRepository {
         _coupon.value = codigo?.takeIf { it.isNotBlank() }
     }
 
+
     fun vaciar() {
         _items.value = emptyList()
         _coupon.value = null
     }
+
 
     fun agregarProducto(producto: Producto, cantidad: Int = 1) {
         if (cantidad <= 0) return
@@ -55,10 +59,12 @@ object CarritoRepository {
             else list.toMutableList().apply {
                 this[idx] = this[idx].copy(cantidad = cantidad)
             }
+
         }
     }
 
     fun eliminarProducto(productoId: Int) {
+
         _items.update { list -> list.filterNot { it.producto.id == productoId } }
     }
 
@@ -143,5 +149,6 @@ object CarritoRepository {
 
     fun limpiarComprobante() {
         _ultimoComprobante.value = null
+
     }
 }

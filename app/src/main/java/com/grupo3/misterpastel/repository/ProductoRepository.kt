@@ -1,5 +1,6 @@
 package com.grupo3.misterpastel.repository
 
+
 import android.content.Context
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Categoria
@@ -37,18 +38,22 @@ class ProductoRepository private constructor(context: Context) {
             precio = "$45.000 CLP",
             imagen = R.drawable.torta_chocolate,
             categoria = Categoria.TORTA_CIRCULAR,
+
             descripcion = "Bizcocho húmedo de cacao con ganache y cobertura de chocolate amargo."
         ),
         Producto(
             id = 2,
+
             nombre = "Torta Cuadrada de Frutas",
             precio = "$50.000 CLP",
             imagen = R.drawable.torta_frutas,
             categoria = Categoria.TORTA_CUADRADA,
+
             descripcion = "Esponjosa con crema pastelera y frutas frescas de temporada."
         ),
         Producto(
             id = 3,
+
             nombre = "Torta Especial de Cumpleaños",
             precio = "$55.000 CLP",
             imagen = R.drawable.torta_cumple,
@@ -83,10 +88,12 @@ class ProductoRepository private constructor(context: Context) {
         // === POSTRES INDIVIDUALES ===
         Producto(
             id = 7,
+
             nombre = "Mousse de Chocolate",
             precio = "$5.000 CLP",
             imagen = R.drawable.mousse_chocolate,
             categoria = Categoria.POSTRE_INDIVIDUAL,
+
             descripcion = "Textura ligera de cacao premium decorada con virutas de chocolate."
         ),
         Producto(
@@ -115,10 +122,12 @@ class ProductoRepository private constructor(context: Context) {
         ),
         Producto(
             id = 11,
+
             nombre = "Empanada de Manzana",
             precio = "$3.000 CLP",
             imagen = R.drawable.empanada_manzana,
             categoria = Categoria.PASTELERIA_TRADICIONAL,
+
             descripcion = "Masa crujiente rellena de compota de manzana con canela."
         ),
         Producto(
@@ -212,10 +221,12 @@ class ProductoRepository private constructor(context: Context) {
         }
     }
 
+
     fun getProductoById(id: Int): Producto? = _productos.value.find { it.id == id }
 
     fun filtrarPorCategoria(cat: Categoria?): List<Producto> =
         if (cat == null) _productos.value else _productos.value.filter { it.categoria == cat }
+
 
     // Mantengo esta API por compatibilidad: reemplaza catálogo por completo
     fun actualizarCatalogo(nuevo: List<Producto>) {
@@ -257,5 +268,6 @@ class ProductoRepository private constructor(context: Context) {
                 instance
             }
         }
+
     }
 }

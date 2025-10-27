@@ -1,5 +1,6 @@
 package com.grupo3.misterpastel.repository
 
+
 import android.content.Context
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.repository.local.AppDatabase
@@ -53,11 +54,13 @@ class UsuarioRepository private constructor(private val context: Context) {
             return@withContext Result.failure(IllegalArgumentException("El correo ya está registrado"))
         }
 
+
         val nuevo = Usuario(
             id = UUID.randomUUID().toString(),
             nombre = nombre,
             email = email,
             edad = edad,
+
             fechaNacimiento = fechaNacimiento,
             direccion = direccion,
             telefono = telefono,
@@ -112,9 +115,11 @@ class UsuarioRepository private constructor(private val context: Context) {
     // ==============================
     // CERRAR SESIÓN
     // ==============================
+
     fun logout() {
         _usuarioActual.value = null
     }
+
 
     // ==============================
     // ACTUALIZAR PERFIL
@@ -135,4 +140,5 @@ class UsuarioRepository private constructor(private val context: Context) {
             _usuarioActual.value = usuario
             Result.success(Unit)
         }
+
 }

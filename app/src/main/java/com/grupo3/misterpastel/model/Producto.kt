@@ -28,6 +28,7 @@ data class Producto(
 )
 * */
 
+
     /** Convierte strings tipo "45.000 CLP", "$12.990", "12990" en 12990.0 de forma tolerante. */
     fun Producto.precioDouble(): Double =
         precio
@@ -35,4 +36,5 @@ data class Producto(
             .replace(".", "")                  // quita separador de miles
             .replace(",", ".")                 // coma -> punto
             .toDoubleOrNull() ?: 0.0
+
 
