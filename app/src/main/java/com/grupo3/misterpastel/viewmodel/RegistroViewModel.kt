@@ -1,9 +1,10 @@
 package com.grupo3.misterpastel.viewmodel
 
+import android.app.Application
 import android.os.Build
 import android.util.Patterns
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,7 @@ import java.time.format.DateTimeParseException
 
 /**
  * Estado que representa los datos del formulario de registro.
- * Al vivir en el ViewModel, sobrevive a cambios de configuración (como rotar el teléfono).
+ * Vive en el ViewModel para sobrevivir a cambios de configuración.
  */
 data class RegistroUiState(
     val nombre: String = "",
@@ -31,9 +32,9 @@ data class RegistroUiState(
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
-class RegistroViewModel : ViewModel() {
+class RegistroViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Estado para el resultado del registro (Idle, Loading, Success, Error)
+    // Estado del proceso de registro
     sealed class RegistrationState {
         object Idle : RegistrationState()
         object Loading : RegistrationState()
@@ -44,55 +45,35 @@ class RegistroViewModel : ViewModel() {
     private val _registrationState = MutableStateFlow<RegistrationState>(RegistrationState.Idle)
     val registrationState: StateFlow<RegistrationState> = _registrationState.asStateFlow()
 
-    // --- ¡NUEVO! Estado para los campos del formulario ---
+    // Estado del formulario
     private val _uiState = MutableStateFlow(RegistroUiState())
     val uiState: StateFlow<RegistroUiState> = _uiState.asStateFlow()
 
-    // --- ¡NUEVO! Funciones para que la UI actualice el estado ---
-    fun onNombreChange(valor: String) {
-        _uiState.update { it.copy(nombre = valor) }
-        clearError()
-    }
-    fun onEmailChange(valor: String) {
-        _uiState.update { it.copy(email = valor) }
-        clearError()
-    }
-    fun onPasswordChange(valor: String) {
-        _uiState.update { it.copy(password = valor) }
-        clearError()
-    }
-    fun onConfirmPasswordChange(valor: String) {
-        _uiState.update { it.copy(confirmPassword = valor) }
-        clearError()
-    }
-    fun onFechaNacimientoChange(valor: String) {
-        _uiState.update { it.copy(fechaNacimiento = valor) }
-        clearError()
-    }
-    fun onDireccionChange(valor: String) {
-        _uiState.update { it.copy(direccion = valor) }
-        clearError()
-    }
-    fun onTelefonoChange(valor: String) {
-        _uiState.update { it.copy(telefono = valor) }
-        clearError()
-    }
+    // Instancia del repositorio con acceso a Room
+    private val repository = UsuarioRepository.getInstance(application)
 
-    // Limpia el error en cuanto el usuario empieza a escribir de nuevo
+    // ======== Actualización de campos ========
+    fun onNombreChange(valor: String) { _uiState.update { it.copy(nombre = valor) }; clearError() }
+    fun onEmailChange(valor: String) { _uiState.update { it.copy(email = valor) }; clearError() }
+    fun onPasswordChange(valor: String) { _uiState.update { it.copy(password = valor) }; clearError() }
+    fun onConfirmPasswordChange(valor: String) { _uiState.update { it.copy(confirmPassword = valor) }; clearError() }
+    fun onFechaNacimientoChange(valor: String) { _uiState.update { it.copy(fechaNacimiento = valor) }; clearError() }
+    fun onDireccionChange(valor: String) { _uiState.update { it.copy(direccion = valor) }; clearError() }
+    fun onTelefonoChange(valor: String) { _uiState.update { it.copy(telefono = valor) }; clearError() }
+
     private fun clearError() {
-        if (_registrationState.value is RegistrationState.Error) {
+        if (_registrationState.value is RegistrationState.Error)
             _registrationState.value = RegistrationState.Idle
-        }
     }
 
-    // --- ¡MODIFICADO! La función register() ya no recibe parámetros ---
+    // ======== Registro de usuario ========
     fun register() {
-        // Lee los datos directamente desde el uiState interno
         val state = _uiState.value
 
-        // Validaciones (usando el 'state' interno)
-        if (state.nombre.isBlank() || state.email.isBlank() || state.password.isBlank() || state.confirmPassword.isBlank()
-            || state.fechaNacimiento.isBlank() || state.direccion.isBlank() || state.telefono.isBlank()
+        // --- Validaciones ---
+        if (state.nombre.isBlank() || state.email.isBlank() || state.password.isBlank() ||
+            state.confirmPassword.isBlank() || state.fechaNacimiento.isBlank() ||
+            state.direccion.isBlank() || state.telefono.isBlank()
         ) {
             _registrationState.value = RegistrationState.Error("Todos los campos son obligatorios.")
             return
@@ -129,9 +110,9 @@ class RegistroViewModel : ViewModel() {
 
         _registrationState.value = RegistrationState.Loading
 
-        // Usamos viewModelScope para la llamada al repositorio
+        // --- Llamada al repositorio ---
         viewModelScope.launch {
-            val result = UsuarioRepository.registrar(
+            val result = repository.registrar(
                 nombre = state.nombre.trim(),
                 email = state.email.trim(),
                 password = state.password.trim(),
@@ -139,7 +120,7 @@ class RegistroViewModel : ViewModel() {
                 fechaNacimiento = state.fechaNacimiento.trim(),
                 direccion = state.direccion.trim(),
                 telefono = state.telefono.trim(),
-                fotoUrl = null // NO foto en registro
+                fotoUrl = null
             )
 
             result.onSuccess {
