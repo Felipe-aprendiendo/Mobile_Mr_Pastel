@@ -1,94 +1,231 @@
-package com.grupo3.misterpastel.viewmodel
+package com.grupo3.misterpastel.ui.screens
 
 import android.os.Build
-import android.util.Patterns
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.ViewModel
-import com.grupo3.misterpastel.repository.UsuarioRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import java.time.LocalDate
-import java.time.Period
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.grupo3.misterpastel.R
+import com.grupo3.misterpastel.viewmodel.RegistroViewModel
+import kotlinx.coroutines.flow.collectLatest
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
+// Añadimos OptIn para el DatePicker de Material 3
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
-class RegistroViewModel : ViewModel() {
+@Composable
+fun RegistroScreen(
+    navController: NavController,
+    registroViewModel: RegistroViewModel = viewModel()
+) {
+    // --- ¡MODIFICADO! ---
+    // Leemos el estado del formulario (uiState) desde el ViewModel
+    val uiState by registroViewModel.uiState.collectAsState()
 
-    sealed class RegistrationState {
-        object Idle : RegistrationState()
-        object Loading : RegistrationState()
-        object Success : RegistrationState()
-        data class Error(val message: String) : RegistrationState()
-    }
+    // El estado del proceso de registro (Loading, Error, Success) se mantiene
+    val registrationState by registroViewModel.registrationState.collectAsState()
 
-    private val _registrationState = MutableStateFlow<RegistrationState>(RegistrationState.Idle)
-    val registrationState: StateFlow<RegistrationState> = _registrationState
+    // --- ¡NUEVO! Estado local solo para controlar si el calendario se muestra ---
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
 
-    fun register(
-        nombre: String,
-        email: String,
-        password: String,
-        confirmPassword: String,
-        fechaNacimiento: String,
-        direccion: String,
-        telefono: String
-    ) {
-        // Validaciones sincrónicas (no necesitas coroutine para esto)
-        if (nombre.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()
-            || fechaNacimiento.isBlank() || direccion.isBlank() || telefono.isBlank()
-        ) {
-            _registrationState.value = RegistrationState.Error("Todos los campos son obligatorios.")
-            return
-        }
-
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            _registrationState.value = RegistrationState.Error("El formato del correo no es válido.")
-            return
-        }
-
-        if (password != confirmPassword) {
-            _registrationState.value = RegistrationState.Error("Las contraseñas no coinciden.")
-            return
-        }
-
-        if (password.length < 6) {
-            _registrationState.value = RegistrationState.Error("La contraseña debe tener al menos 6 caracteres.")
-            return
-        }
-
-        val edad = try {
-            val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-            val fecha = LocalDate.parse(fechaNacimiento, fmt)
-            val years = Period.between(fecha, LocalDate.now()).years
-            if (years < 13) {
-                _registrationState.value = RegistrationState.Error("Debes tener al menos 13 años para registrarte.")
-                return
+    // Reacción a cambios del VM para navegar
+    LaunchedEffect(registrationState) {
+        if (registrationState is RegistroViewModel.RegistrationState.Success) {
+            navController.navigate("home_iniciada") {
+                popUpTo("registro") { inclusive = true }
             }
-            years
-        } catch (_: DateTimeParseException) {
-            _registrationState.value = RegistrationState.Error("Formato de fecha no válido. Usa dd/MM/yyyy.")
-            return
-        }
-
-        _registrationState.value = RegistrationState.Loading
-
-        val result = UsuarioRepository.registrar(
-            nombre = nombre.trim(),
-            email = email.trim(),
-            password = password.trim(),
-            edad = edad,
-            fechaNacimiento = fechaNacimiento.trim(),
-            direccion = direccion.trim(),
-            telefono = telefono.trim(),
-            fotoUrl = null // NO foto en registro
-        )
-
-        result.onSuccess {
-            _registrationState.value = RegistrationState.Success
-        }.onFailure {
-            _registrationState.value =
-                RegistrationState.Error(it.message ?: "Error desconocido al registrar usuario.")
         }
     }
+
+    val scrollState = rememberScrollState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+
+            Image(
+                painter = painterResource(id = R.drawable.logo_claro),
+                contentDescription = "Logo Pastelería 1000 Sabores",
+                modifier = Modifier.size(120.dp)
+            )
+
+            Text(
+                text = "Crear Cuenta",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            // --- ¡MODIFICADO! Todos los OutlinedTextField leen y escriben en el ViewModel ---
+            OutlinedTextField(
+                value = uiState.nombre,
+                onValueChange = registroViewModel::onNombreChange,
+                label = { Text("Nombre completo") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.email,
+                onValueChange = registroViewModel::onEmailChange,
+                label = { Text("Correo electrónico") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // --- ¡NUEVO! Implementación del DatePickerDialog ---
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                // Convertimos los milisegundos a la fecha en formato "dd/MM/yyyy"
+                                val fechaFormateada = convertMillisToDate(millis)
+                                registroViewModel.onFechaNacimientoChange(fechaFormateada)
+                            }
+                            showDatePicker = false
+                        }) { Text("Aceptar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
+            // --- ¡MODIFICADO! Campo de fecha (no editable, abre el calendario) ---
+            OutlinedTextField(
+                value = uiState.fechaNacimiento,
+                onValueChange = { /* No hace nada, es de solo lectura */ },
+                label = { Text("Fecha de nacimiento") },
+                placeholder = { Text("dd/MM/yyyy") },
+                singleLine = true,
+                readOnly = true, // El usuario no puede escribir
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true }, // Abre el calendario
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.DateRange,
+                        contentDescription = "Abrir calendario",
+                        modifier = Modifier.clickable { showDatePicker = true }
+                    )
+                }
+            )
+
+            OutlinedTextField(
+                value = uiState.direccion,
+                onValueChange = registroViewModel::onDireccionChange,
+                label = { Text("Dirección") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.telefono,
+                onValueChange = registroViewModel::onTelefonoChange,
+                label = { Text("Teléfono") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.password,
+                onValueChange = registroViewModel::onPasswordChange,
+                label = { Text("Contraseña") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = uiState.confirmPassword,
+                onValueChange = registroViewModel::onConfirmPasswordChange,
+                label = { Text("Confirmar contraseña") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Captura el estado actual en una variable local
+            val regState = registrationState
+
+// Ahora usa la variable local en el 'if'
+            if (regState is RegistroViewModel.RegistrationState.Error) {
+                Text(
+                    text = regState.message, // <-- Usa la variable local 'regState'
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            val isLoading = registrationState is RegistroViewModel.RegistrationState.Loading
+
+            Button(
+                onClick = {
+                    // --- ¡MODIFICADO! Llamada simple sin parámetros ---
+                    registroViewModel.register()
+                },
+                enabled = !isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isLoading) "Registrando..." else "Registrarse")
+            }
+
+            TextButton(onClick = { navController.navigate("login") }) {
+                Text("¿Ya tienes cuenta? Inicia sesión")
+            }
+
+            OutlinedButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Volver")
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+// --- ¡NUEVO! Función Helper para formatear la fecha del calendario ---
+@RequiresApi(Build.VERSION_CODES.O)
+private fun convertMillisToDate(millis: Long): String {
+    val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+    return date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
 }

@@ -3,24 +3,15 @@ package com.grupo3.misterpastel.repository
 import com.grupo3.misterpastel.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.util.UUID
 import org.mindrot.jbcrypt.BCrypt
+import java.util.UUID
 
-
-/**
- * Repositorio que gestiona usuarios simulando un backend en memoria.
- * Compatible con AutenticarViewModel y futuras implementaciones con Room o DataStore.
- */
 object UsuarioRepository {
 
-    // Lista de usuarios simulados
     private val usuarios = mutableListOf<Usuario>()
-
-    // Usuario actualmente autenticado (flujo observable)
     internal val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual
 
-    // === REGISTRO DE USUARIO ===
     fun registrar(
         nombre: String,
         email: String,
@@ -35,7 +26,6 @@ object UsuarioRepository {
             return Result.failure(IllegalArgumentException("El correo ya está registrado"))
         }
 
-        // Genera el hash de la contraseña
         val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
 
         val nuevo = Usuario(
@@ -46,7 +36,7 @@ object UsuarioRepository {
             fechaNacimiento = fechaNacimiento,
             direccion = direccion,
             telefono = telefono,
-            password = hashedPassword, // ✅ guardamos el hash
+            password = hashedPassword, // Guardamos el hash
             fotoUrl = fotoUrl
         )
 
@@ -55,22 +45,25 @@ object UsuarioRepository {
         return Result.success(nuevo)
     }
 
-    // === LOGIN ===
-    // Mantiene compatibilidad con el ViewModel de autenticación (buscarPorCredenciales)
+    // --- ¡CORREGIDO! ---
+    // Esta función ahora usa 'BCrypt.checkpw' para comparar la contraseña
     fun buscarPorCredenciales(email: String, password: String): Usuario? {
-        val usuario = usuarios.find {
-            it.email.equals(email, ignoreCase = true) && it.password == password
+        val usuario = usuarios.find { it.email.equals(email, ignoreCase = true) }
+            ?: return null // Usuario no encontrado
+
+        // Verificar la contraseña usando checkpw
+        if (BCrypt.checkpw(password, usuario.password)) {
+            _usuarioActual.value = usuario
+            return usuario
+        } else {
+            return null // Contraseña incorrecta
         }
-        _usuarioActual.value = usuario
-        return usuario
     }
 
-    // Alias alternativo si se usa directamente en otras pantallas
     fun login(email: String, password: String): Result<Usuario> {
         val u = usuarios.find { it.email.equals(email, ignoreCase = true) }
             ?: return Result.failure(IllegalArgumentException("Credenciales inválidas"))
 
-        // Verificamos el hash en lugar de comparar texto plano
         return if (BCrypt.checkpw(password, u.password)) {
             _usuarioActual.value = u
             Result.success(u)
@@ -79,15 +72,12 @@ object UsuarioRepository {
         }
     }
 
-    // === CERRAR SESIÓN ===
     fun cerrarSesion() {
         _usuarioActual.value = null
     }
 
-    // Alias alternativo
     fun logout() = cerrarSesion()
 
-    // === ACTUALIZAR PERFIL ===
     fun actualizarPerfil(usuarioActualizado: Usuario): Result<Unit> {
         val idx = usuarios.indexOfFirst { it.id == usuarioActualizado.id }
         if (idx == -1) return Result.failure(IllegalArgumentException("Usuario no encontrado"))
