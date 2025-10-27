@@ -1,18 +1,35 @@
 package com.grupo3.misterpastel.repository
 
+import android.content.Context
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
+import com.grupo3.misterpastel.repository.local.AppDatabase
+import com.grupo3.misterpastel.repository.local.ProductoEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /**
- * Repositorio de catálogo. Expone un StateFlow para que los ViewModels
- * puedan observar cambios (en el futuro si cargan desde red/JSON).
+ * MOD (importante):
+ * - Antes era un object en memoria. Ahora es una clase Repository con Room y Singleton por contexto.
+ * - Expone StateFlow<List<Producto>> alimentado desde Room.
+ * - Si la tabla está vacía, siembra los 20 productos iniciales (seed).
  */
-object ProductoRepository {
+class ProductoRepository private constructor(context: Context) {
 
-    // Catálogo inicial (puedes moverlo a JSON local más adelante)
+    private val dao = AppDatabase.getDatabase(context).productoDao()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Catálogo observable desde la UI
+    private val _productos = MutableStateFlow<List<Producto>>(emptyList())
+    val productos: StateFlow<List<Producto>> = _productos
+
+    // === Catálogo inicial (semilla) ===
+    // (Se mantienen exactamente los mismos 20 productos originales)
     private val initialCatalog = listOf(
         // === TORTAS CLÁSICAS ===
         Producto(
@@ -183,17 +200,63 @@ object ProductoRepository {
         )
     )
 
-
-    private val _productos = MutableStateFlow(initialCatalog)
-    val productos: StateFlow<List<Producto>> = _productos
+    init {
+        scope.launch {
+            // Siembra inicial si está vacío
+            if (dao.contar() == 0) {
+                dao.insertarProductos(initialCatalog.map { it.toEntity() })
+            }
+            // Observa cambios en Room y los expone como modelos de UI
+            dao.obtenerTodos().collect { entities ->
+                _productos.value = entities.map { it.toModel() }
+            }
+        }
+    }
 
     fun getProductoById(id: Int): Producto? = _productos.value.find { it.id == id }
 
     fun filtrarPorCategoria(cat: Categoria?): List<Producto> =
         if (cat == null) _productos.value else _productos.value.filter { it.categoria == cat }
 
-    // Ejemplo de actualización futura (cargar JSON o remoto)
+    // Mantengo esta API por compatibilidad: reemplaza catálogo por completo
     fun actualizarCatalogo(nuevo: List<Producto>) {
-        _productos.value = nuevo
+        scope.launch {
+            dao.eliminarTodos()
+            dao.insertarProductos(nuevo.map { it.toEntity() })
+        }
+    }
+
+    // === Mapeos ===
+    private fun ProductoEntity.toModel(): Producto =
+        Producto(
+            id = id,
+            nombre = nombre,
+            precio = precio,
+            imagen = imagen,
+            categoria = Categoria.valueOf(categoria),
+            descripcion = descripcion
+        )
+
+    private fun Producto.toEntity(): ProductoEntity =
+        ProductoEntity(
+            id = id,
+            nombre = nombre,
+            precio = precio,
+            imagen = imagen,
+            categoria = categoria.name,
+            descripcion = descripcion
+        )
+
+    companion object {
+        @Volatile
+        private var INSTANCE: ProductoRepository? = null
+
+        fun getInstance(context: Context): ProductoRepository {
+            return INSTANCE ?: synchronized(this) {
+                val instance = ProductoRepository(context.applicationContext)
+                INSTANCE = instance
+                instance
+            }
+        }
     }
 }
