@@ -4,6 +4,8 @@ import com.grupo3.misterpastel.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.UUID
+import org.mindrot.jbcrypt.BCrypt
+
 
 /**
  * Repositorio que gestiona usuarios simulando un backend en memoria.
@@ -33,6 +35,9 @@ object UsuarioRepository {
             return Result.failure(IllegalArgumentException("El correo ya está registrado"))
         }
 
+        // Genera el hash de la contraseña
+        val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
+
         val nuevo = Usuario(
             id = UUID.randomUUID().toString(),
             nombre = nombre,
@@ -41,7 +46,7 @@ object UsuarioRepository {
             fechaNacimiento = fechaNacimiento,
             direccion = direccion,
             telefono = telefono,
-            password = password,
+            password = hashedPassword, // ✅ guardamos el hash
             fotoUrl = fotoUrl
         )
 
@@ -62,10 +67,16 @@ object UsuarioRepository {
 
     // Alias alternativo si se usa directamente en otras pantallas
     fun login(email: String, password: String): Result<Usuario> {
-        val u = usuarios.find { it.email.equals(email, ignoreCase = true) && it.password == password }
+        val u = usuarios.find { it.email.equals(email, ignoreCase = true) }
             ?: return Result.failure(IllegalArgumentException("Credenciales inválidas"))
-        _usuarioActual.value = u
-        return Result.success(u)
+
+        // Verificamos el hash en lugar de comparar texto plano
+        return if (BCrypt.checkpw(password, u.password)) {
+            _usuarioActual.value = u
+            Result.success(u)
+        } else {
+            Result.failure(IllegalArgumentException("Credenciales inválidas"))
+        }
     }
 
     // === CERRAR SESIÓN ===

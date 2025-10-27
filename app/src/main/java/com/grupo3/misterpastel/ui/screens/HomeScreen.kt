@@ -9,18 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.R
-import com.grupo3.misterpastel.viewmodel.AutenticarViewModel
 
 @Composable
 fun HomeScreen(navController: NavController) {
-
-    // === ViewModel de autenticación ===
-    // Permite verificar si el usuario tiene sesión iniciada
-    val autenticarViewModel: AutenticarViewModel = viewModel()
-    val isUserLoggedIn by autenticarViewModel.isLoggedIn.collectAsState()
 
     Box(
         modifier = Modifier
@@ -66,13 +59,7 @@ fun HomeScreen(navController: NavController) {
             // Botón para ver el catálogo sin iniciar sesión
             OutlinedButton(
                 onClick = {
-                    // Si el usuario tiene sesión activa lo enviamos al HomeSesionIniciada
-                    // Caso contrario, debe iniciar sesión primero
-                    if (isUserLoggedIn) {
-                        navController.navigate("home_iniciada")
-                    } else {
-                        navController.navigate("login")
-                    }
+                    navController.navigate("home_iniciada")
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

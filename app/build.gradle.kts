@@ -70,4 +70,6 @@ dependencies {
     implementation(libs.google.gson)
 
 
+    // 🔐 BCrypt para hashear contraseñas
+    implementation("org.mindrot:jbcrypt:0.4")
 }
