@@ -1,6 +1,5 @@
 package com.grupo3.misterpastel.ui.screens
 
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
@@ -19,17 +18,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.grupo3.misterpastel.model.Producto
+import com.grupo3.misterpastel.viewmodel.CarritoViewModel
+import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
-fun DetalleProductoScreen(navController: NavController, producto: Producto) {
+fun DetalleProductoScreen(
+    navController: NavController,
+    productoId: Int,
+    catalogoViewModel: CatalogoViewModel = viewModel(),
+    carritoViewModel: CarritoViewModel = viewModel()
+) {
+    // Obtenemos el producto una sola vez por id
+    val producto = remember(productoId) { catalogoViewModel.getProductoById(productoId) }
 
-    // Este estado interno es el que controla la cantidad seleccionada
-    // Comienza en 0, lo que significa que aún no se ha agregado al carrito.
-    var cantidad by remember { mutableStateOf(0) }
+    if (producto == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Producto no encontrado")
+        }
+        return
+    }
 
+    // Observamos el carrito compartido y derivamos la cantidad del producto
+    val items by carritoViewModel.items.collectAsState()
+    val cantidad = items.firstOrNull { it.producto.id == productoId }?.cantidad ?: 0
 
     Scaffold(
         topBar = {
@@ -49,19 +63,15 @@ fun DetalleProductoScreen(navController: NavController, producto: Producto) {
             )
         }
     ) { paddingValues ->
-
-
-        // verticalScroll permite hacer scroll si el contenido es largo, o al menos más largo que la pantalla del susuario
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()), // soporte para scroll
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Image(
                 painter = painterResource(id = producto.imagen),
                 contentDescription = producto.nombre,
@@ -80,13 +90,11 @@ fun DetalleProductoScreen(navController: NavController, producto: Producto) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // En esta fila está el rpecio y botón para agregar al carro
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Text(
                     text = producto.precio,
                     fontSize = 20.sp,
@@ -94,54 +102,35 @@ fun DetalleProductoScreen(navController: NavController, producto: Producto) {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Aquí ocurre la animación del botón agregar
-                // AnimatedContent cambia suavemente entre dos estados de UI:
-                // (1) "Agrregar al carrrito" → (2) Selector de cantdiad
                 AnimatedContent(targetState = cantidad) { cantidadActual ->
                     if (cantidadActual == 0) {
-                        // === BOTÓN AGREGAR AL CARRITO ===
                         Button(
-                            onClick = {
-                                cantidad = 1
-                                // TODO: En la versión final, aquí se debería agregar al carrito
-                                // Ejemplo:
-                                // viewModel.agregarAlCarrito(producto, cantidad)
-                            }
+                            onClick = { carritoViewModel.agregar(producto, 1) }
                         ) {
                             Text("Agregar")
                         }
                     } else {
-                        // === SELECTOR DE CANTIDAD ===
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Botón "-" para disminuir cantidad
                             OutlinedButton(
                                 onClick = {
-                                    if (cantidad > 0) cantidad--
-                                    // TODO: En versión final, actualizar cantidad en el carrito
-                                    // viewModel.actualizarCantidad(producto, cantidad)
+                                    carritoViewModel.actualizarCantidad(producto.id, cantidadActual - 1)
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
                                 Text("-", fontSize = 20.sp)
                             }
-
-                            // Muestra la cantidad actual
                             Text(
-                                text = cantidad.toString(),
+                                text = cantidadActual.toString(),
                                 fontSize = 18.sp,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.width(30.dp)
                             )
-
-                            // Botón "+" para aumentar cantidad
                             OutlinedButton(
                                 onClick = {
-                                    cantidad++
-                                    // TODO: En versión final, actualizar cantidad en el carrito
-                                    // viewModel.actualizarCantidad(producto, cantidad)
+                                    carritoViewModel.actualizarCantidad(producto.id, cantidadActual + 1)
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp)
                             ) {
@@ -154,7 +143,6 @@ fun DetalleProductoScreen(navController: NavController, producto: Producto) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // === DESCRIPCIÓN DEL PRODUCTO ===
             Text(
                 text = producto.descripcion,
                 fontSize = 16.sp,
