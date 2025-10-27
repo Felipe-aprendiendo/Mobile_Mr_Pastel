@@ -1,6 +1,7 @@
 package com.grupo3.misterpastel.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.repository.UsuarioRepository
@@ -10,42 +11,44 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Maneja el estado de la sesión del usuario.
- * - Expone el usuario actual desde el repositorio (StateFlow).
- * - Permite cerrar sesión.
- * - Permite actualizar datos de perfil o la foto.
+ * ViewModel que maneja la sesión del usuario y sincroniza los datos
+ * con la base de datos Room mediante UsuarioRepository.
  */
-class SessionViewModel : ViewModel() {
+class SessionViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val usuarioRepository = UsuarioRepository
+    // Instancia del repositorio persistente
+    private val repository = UsuarioRepository.getInstance(application)
 
-    // Estado del usuario actual (observado por las pantallas)
-    val usuarioActual: StateFlow<Usuario?> = usuarioRepository.usuarioActual
+    // Estado observable del usuario actual (flujo de Room → UI)
+    val usuarioActual: StateFlow<Usuario?> = repository.usuarioActual
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
         )
 
-    /** Cierra la sesión actual. */
+    /** Cierra la sesión actual (borra el flujo de usuario en memoria). */
     fun logout() {
-        usuarioRepository.logout()
+        repository.logout()
     }
 
-    /** Actualiza los datos del perfil (nombre, dirección, etc.). */
+    /**
+     * Actualiza los datos del perfil en la base local.
+     * Este cambio se refleja automáticamente en la UI.
+     */
     fun actualizarPerfil(actualizado: Usuario, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
-            val result = usuarioRepository.actualizarPerfil(actualizado)
+            val result = repository.actualizarPerfil(actualizado)
             result.onFailure { onError(it.message ?: "Error al actualizar perfil") }
         }
     }
 
-    /** Cambia solo la URL/URI de la foto del usuario. */
+    /** Actualiza solo la foto de perfil del usuario actual. */
     fun actualizarFoto(fotoUrl: String?, onError: (String) -> Unit = {}) {
         val usuario = usuarioActual.value ?: return
         val actualizado = usuario.copy(fotoUrl = fotoUrl)
         viewModelScope.launch {
-            val result = usuarioRepository.actualizarPerfil(actualizado)
+            val result = repository.actualizarPerfil(actualizado)
             result.onFailure { onError(it.message ?: "Error al actualizar la foto") }
         }
     }
