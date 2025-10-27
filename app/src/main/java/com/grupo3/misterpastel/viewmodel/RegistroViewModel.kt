@@ -1,198 +1,153 @@
-package com.grupo3.misterpastel.ui.screens
+package com.grupo3.misterpastel.viewmodel
 
 import android.os.Build
+import android.util.Patterns
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import com.grupo3.misterpastel.R
-import com.grupo3.misterpastel.viewmodel.RegistroViewModel
-import kotlinx.coroutines.flow.collectLatest
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.grupo3.misterpastel.repository.UsuarioRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
+/**
+ * Estado que representa los datos del formulario de registro.
+ * Al vivir en el ViewModel, sobrevive a cambios de configuración (como rotar el teléfono).
+ */
+data class RegistroUiState(
+    val nombre: String = "",
+    val email: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
+    val fechaNacimiento: String = "",
+    val direccion: String = "",
+    val telefono: String = ""
+)
 
 @RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun RegistroScreen(
-    navController: NavController,
-    registroViewModel: RegistroViewModel = viewModel()
-) {
-    var nombre by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var fechaNacimiento by remember { mutableStateOf("") }
-    var direccion by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var generalError by remember { mutableStateOf<String?>(null) }
+class RegistroViewModel : ViewModel() {
 
-    val registrationState by registroViewModel.registrationState.collectAsState()
+    // Estado para el resultado del registro (Idle, Loading, Success, Error)
+    sealed class RegistrationState {
+        object Idle : RegistrationState()
+        object Loading : RegistrationState()
+        object Success : RegistrationState()
+        data class Error(val message: String) : RegistrationState()
+    }
 
-    // Reacción a cambios del VM manteniendo tu navegación original
-    LaunchedEffect(Unit) {
-        snapshotFlow { registrationState }.collectLatest { state ->
-            when (state) {
-                is RegistroViewModel.RegistrationState.Success -> {
-                    navController.navigate("home_iniciada") {
-                        popUpTo("registro") { inclusive = true }
-                    }
-                }
-                is RegistroViewModel.RegistrationState.Error -> {
-                    generalError = state.message
-                }
-                is RegistroViewModel.RegistrationState.Idle -> {
-                    generalError = null
-                }
-                else -> Unit
-            }
+    private val _registrationState = MutableStateFlow<RegistrationState>(RegistrationState.Idle)
+    val registrationState: StateFlow<RegistrationState> = _registrationState.asStateFlow()
+
+    // --- ¡NUEVO! Estado para los campos del formulario ---
+    private val _uiState = MutableStateFlow(RegistroUiState())
+    val uiState: StateFlow<RegistroUiState> = _uiState.asStateFlow()
+
+    // --- ¡NUEVO! Funciones para que la UI actualice el estado ---
+    fun onNombreChange(valor: String) {
+        _uiState.update { it.copy(nombre = valor) }
+        clearError()
+    }
+    fun onEmailChange(valor: String) {
+        _uiState.update { it.copy(email = valor) }
+        clearError()
+    }
+    fun onPasswordChange(valor: String) {
+        _uiState.update { it.copy(password = valor) }
+        clearError()
+    }
+    fun onConfirmPasswordChange(valor: String) {
+        _uiState.update { it.copy(confirmPassword = valor) }
+        clearError()
+    }
+    fun onFechaNacimientoChange(valor: String) {
+        _uiState.update { it.copy(fechaNacimiento = valor) }
+        clearError()
+    }
+    fun onDireccionChange(valor: String) {
+        _uiState.update { it.copy(direccion = valor) }
+        clearError()
+    }
+    fun onTelefonoChange(valor: String) {
+        _uiState.update { it.copy(telefono = valor) }
+        clearError()
+    }
+
+    // Limpia el error en cuanto el usuario empieza a escribir de nuevo
+    private fun clearError() {
+        if (_registrationState.value is RegistrationState.Error) {
+            _registrationState.value = RegistrationState.Idle
         }
     }
 
-    val scrollState = rememberScrollState()
+    // --- ¡MODIFICADO! La función register() ya no recibe parámetros ---
+    fun register() {
+        // Lee los datos directamente desde el uiState interno
+        val state = _uiState.value
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(scrollState),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        // Validaciones (usando el 'state' interno)
+        if (state.nombre.isBlank() || state.email.isBlank() || state.password.isBlank() || state.confirmPassword.isBlank()
+            || state.fechaNacimiento.isBlank() || state.direccion.isBlank() || state.telefono.isBlank()
         ) {
+            _registrationState.value = RegistrationState.Error("Todos los campos son obligatorios.")
+            return
+        }
 
-            // 👇 Conservamos tu imagen
-            Image(
-                painter = painterResource(id = R.drawable.logo_claro),
-                contentDescription = "Logo Pastelería 1000 Sabores",
-                modifier = Modifier.size(120.dp)
-            )
+        if (!Patterns.EMAIL_ADDRESS.matcher(state.email).matches()) {
+            _registrationState.value = RegistrationState.Error("El formato del correo no es válido.")
+            return
+        }
 
-            Text(
-                text = "Crear Cuenta",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+        if (state.password != state.confirmPassword) {
+            _registrationState.value = RegistrationState.Error("Las contraseñas no coinciden.")
+            return
+        }
 
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it; generalError = null },
-                label = { Text("Nombre completo") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+        if (state.password.length < 6) {
+            _registrationState.value = RegistrationState.Error("La contraseña debe tener al menos 6 caracteres.")
+            return
+        }
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it; generalError = null },
-                label = { Text("Correo electrónico") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = fechaNacimiento,
-                onValueChange = { fechaNacimiento = it; generalError = null },
-                label = { Text("Fecha de nacimiento (dd/MM/yyyy)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // 👇 Campos añadidos (direccion/telefono) conservando tu layout
-            OutlinedTextField(
-                value = direccion,
-                onValueChange = { direccion = it; generalError = null },
-                label = { Text("Dirección") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it; generalError = null },
-                label = { Text("Teléfono") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it; generalError = null },
-                label = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it; generalError = null },
-                label = { Text("Confirmar contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (generalError != null) {
-                Text(
-                    text = generalError!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+        val edad = try {
+            val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            val fecha = LocalDate.parse(state.fechaNacimiento, fmt)
+            val years = Period.between(fecha, LocalDate.now()).years
+            if (years < 13) {
+                _registrationState.value = RegistrationState.Error("Debes tener al menos 13 años para registrarte.")
+                return
             }
+            years
+        } catch (_: DateTimeParseException) {
+            _registrationState.value = RegistrationState.Error("Formato de fecha no válido. Usa dd/MM/yyyy.")
+            return
+        }
 
-            val isLoading = registrationState is RegistroViewModel.RegistrationState.Loading
+        _registrationState.value = RegistrationState.Loading
 
-            Button(
-                onClick = {
-                    registroViewModel.register(
-                        nombre = nombre,
-                        email = email,
-                        password = password,
-                        confirmPassword = confirmPassword,
-                        fechaNacimiento = fechaNacimiento,
-                        direccion = direccion,
-                        telefono = telefono
-                    )
-                },
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (isLoading) "Registrando..." else "Registrarse")
+        // Usamos viewModelScope para la llamada al repositorio
+        viewModelScope.launch {
+            val result = UsuarioRepository.registrar(
+                nombre = state.nombre.trim(),
+                email = state.email.trim(),
+                password = state.password.trim(),
+                edad = edad,
+                fechaNacimiento = state.fechaNacimiento.trim(),
+                direccion = state.direccion.trim(),
+                telefono = state.telefono.trim(),
+                fotoUrl = null // NO foto en registro
+            )
+
+            result.onSuccess {
+                _registrationState.value = RegistrationState.Success
+            }.onFailure {
+                _registrationState.value =
+                    RegistrationState.Error(it.message ?: "Error desconocido al registrar usuario.")
             }
-
-            TextButton(onClick = { navController.navigate("login") }) {
-                Text("¿Ya tienes cuenta? Inicia sesión")
-            }
-
-            OutlinedButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Volver")
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

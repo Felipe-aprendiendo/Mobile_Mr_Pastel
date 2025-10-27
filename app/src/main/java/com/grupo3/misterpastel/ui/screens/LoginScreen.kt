@@ -3,7 +3,10 @@ package com.grupo3.misterpastel.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+// 1. Importar lo necesario para el scroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -46,6 +49,9 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
         }
     }
 
+    // 2. Crear el estado para recordar la posición del scroll
+    val scrollState = rememberScrollState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -54,6 +60,10 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
         contentAlignment = Alignment.Center
     ) {
         Column(
+            // 3. Aplicar el modificador verticalScroll a la Columna
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState), // <-- ¡ESTA ES LA LÍNEA CLAVE!
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -88,9 +98,11 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
                 modifier = Modifier.fillMaxWidth()
             )
 
-            if (error != null) {
+            // Asignamos a una variable local para el "smart cast"
+            val currentError = error
+            if (currentError != null) {
                 Text(
-                    text = error!!,
+                    text = currentError,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium
                 )
