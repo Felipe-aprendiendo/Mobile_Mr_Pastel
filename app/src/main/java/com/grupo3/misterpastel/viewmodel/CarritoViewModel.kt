@@ -31,4 +31,34 @@ class CarritoViewModel : ViewModel() {
 
     fun totalConDescuento(): Double =
         CarritoRepository.totalConDescuento(edadUsuario, emailUsuario, coupon.value)
+
+    fun pagar(usuarioId: String, nombre: String, email: String, edad: Int?, pedidoViewModel: PedidoViewModel) {
+        val comprobante = CarritoRepository.confirmarPedidoYGuardarComprobante(
+            usuarioNombre = nombre,
+            usuarioEmail = email,
+            edadUsuario = edad
+        )
+
+        // Guarda el pedido en Room
+        pedidoViewModel.registrarPedidoDesdeComprobante(usuarioId, comprobante)
+    }
+
+
+    fun confirmarPedidoYGuardarComprobante(
+        usuarioNombre: String,
+        usuarioEmail: String,
+        edadUsuario: Int?,
+        metodoPago: String = "Tarjeta de crédito"
+    ): com.grupo3.misterpastel.model.ComprobantePago {
+        return CarritoRepository.confirmarPedidoYGuardarComprobante(
+            usuarioNombre = usuarioNombre,
+            usuarioEmail = usuarioEmail,
+            edadUsuario = edadUsuario,
+            metodoPago = metodoPago
+        )
+    }
+
+
+
+
 }

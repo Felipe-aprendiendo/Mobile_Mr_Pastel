@@ -1,22 +1,42 @@
 package com.grupo3.misterpastel.viewmodel
 
-
 import androidx.lifecycle.ViewModel
 import com.grupo3.misterpastel.model.ComprobantePago
 import com.grupo3.misterpastel.repository.CarritoRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class PagoViewModel : ViewModel() {
 
-    val comprobante: StateFlow<ComprobantePago?> = CarritoRepository.ultimoComprobante
+    // 🧾 Comprobante actual (se usa para mostrar la boleta después del pago)
+    private val _comprobante = MutableStateFlow<ComprobantePago?>(null)
+    val comprobante: StateFlow<ComprobantePago?> = _comprobante
 
+    /**
+     * Inicia el pago generando el comprobante desde el CarritoRepository.
+     * Esta función es opcional si el pago se maneja desde CarritoViewModel.
+     */
     fun iniciarPago(nombre: String, email: String, edad: Int?) {
-        CarritoRepository.confirmarPedidoYGuardarComprobante(
+        val nuevoComprobante = CarritoRepository.confirmarPedidoYGuardarComprobante(
             usuarioNombre = nombre,
             usuarioEmail = email,
             edadUsuario = edad
         )
+        _comprobante.value = nuevoComprobante
     }
 
-    fun limpiarComprobante() = CarritoRepository.limpiarComprobante()
+    /**
+     * Guarda manualmente un comprobante generado desde CarritoViewModel.
+     */
+    fun setComprobante(comprobante: ComprobantePago) {
+        _comprobante.value = comprobante
+    }
+
+    /**
+     * Limpia el comprobante tras mostrarlo o salir del comprobante de pago.
+     */
+    fun limpiarComprobante() {
+        CarritoRepository.limpiarComprobante()
+        _comprobante.value = null
+    }
 }

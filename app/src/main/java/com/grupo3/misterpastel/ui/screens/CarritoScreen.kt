@@ -1,5 +1,6 @@
 package com.grupo3.misterpastel.ui.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,16 +19,24 @@ import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.subtotal
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
 import com.grupo3.misterpastel.viewmodel.PagoViewModel
+import com.grupo3.misterpastel.viewmodel.PedidoViewModel
 import java.text.NumberFormat
 import java.util.*
 
+@SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarritoScreen(
     navController: NavController,
     vm: CarritoViewModel = viewModel(),
-    pagoVM: PagoViewModel = viewModel() // ✅ Se declara aquí, no dentro del botón
+    pedidoVM: PedidoViewModel = viewModel()
 ) {
+    // ✅ PagoViewModel compartido
+    val parentEntry = remember(navController) {
+        navController.getBackStackEntry("carrito")
+    }
+    val pagoVM: PagoViewModel = viewModel(parentEntry)
+
     val items by vm.items.collectAsState()
     val coupon by vm.coupon.collectAsState()
 
@@ -50,13 +59,11 @@ fun CarritoScreen(
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-
             if (items.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Aún no agregas productos.")
@@ -72,18 +79,14 @@ fun CarritoScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .padding(12.dp)
-                                    .fillMaxWidth(),
+                                modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(item.producto.nombre, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        "${nf.format(item.subtotal())} CLP",
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Text("${nf.format(item.subtotal())} CLP",
+                                        color = MaterialTheme.colorScheme.primary)
                                 }
 
                                 Row(
@@ -94,11 +97,7 @@ fun CarritoScreen(
                                         vm.actualizarCantidad(item.producto.id, item.cantidad - 1)
                                     }) { Text("-") }
 
-                                    Text(
-                                        text = "${item.cantidad}",
-                                        fontSize = 16.sp,
-                                        textAlign = TextAlign.Center
-                                    )
+                                    Text("${item.cantidad}", fontSize = 16.sp, textAlign = TextAlign.Center)
 
                                     OutlinedButton(onClick = {
                                         vm.actualizarCantidad(item.producto.id, item.cantidad + 1)
@@ -115,7 +114,6 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Código promocional
                 OutlinedTextField(
                     value = codigoPromo,
                     onValueChange = { codigoPromo = it },
@@ -125,26 +123,19 @@ fun CarritoScreen(
                 )
                 Button(
                     onClick = { vm.setCupon(codigoPromo) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 ) {
                     Text(
                         if ((coupon ?: "").equals("FELICES50", true))
                             "Código aplicado ✅"
-                        else
-                            "Aplicar código"
+                        else "Aplicar código"
                     )
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                // Totales
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Total bruto: ${nf.format(totalBruto)} CLP",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text("Total bruto: ${nf.format(totalBruto)} CLP", style = MaterialTheme.typography.bodyMedium)
 
                     val etiquetaDesc = when {
                         (vm.emailUsuario ?: "").endsWith("@duocuc.cl", true) -> "Descuento aplicado: 100% (DUOC)"
@@ -153,14 +144,9 @@ fun CarritoScreen(
                         else -> "Descuento aplicado: 0%"
                     }
 
+                    Text(etiquetaDesc, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = etiquetaDesc,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Text(
-                        text = "Total a pagar: ${nf.format(totalConDesc)} CLP",
+                        "Total a pagar: ${nf.format(totalConDesc)} CLP",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -169,21 +155,24 @@ fun CarritoScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // ✅ Botón corregido
                 Button(
                     onClick = {
                         val usuario = com.grupo3.misterpastel.repository.UsuarioRepository.usuarioActual.value
                         if (usuario != null && items.isNotEmpty()) {
-                            pagoVM.iniciarPago(usuario.nombre, usuario.email, usuario.edad)
+                            val comprobante = vm.confirmarPedidoYGuardarComprobante(
+                                usuarioNombre = usuario.nombre,
+                                usuarioEmail = usuario.email,
+                                edadUsuario = usuario.edad
+                            )
+                            pedidoVM.registrarPedidoDesdeComprobante(usuario.id, comprobante)
+                            pagoVM.setComprobante(comprobante)
                             navController.navigate("procesando_pago")
                         } else {
                             navController.navigate("login")
                         }
                     },
                     enabled = items.isNotEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
                     Text("Proceder al pago", fontSize = 18.sp)
                 }
