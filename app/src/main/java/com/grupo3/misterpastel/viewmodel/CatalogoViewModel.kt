@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * MOD:
+ * IMPORTANTE:
  * - Cambiado a AndroidViewModel para acceder a Application y obtener el Repository Singleton con Room.
  * - Sin cambios en la API pública hacia la UI.
  */

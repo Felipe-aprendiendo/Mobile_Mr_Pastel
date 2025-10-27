@@ -17,14 +17,29 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,6 +50,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.viewmodel.SessionViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,10 +78,27 @@ fun PerfilUsuarioScreen(
     var telefono by remember(usuarioActual) { mutableStateOf(usuarioActual!!.telefono) }
     var fotoUrl by remember(usuarioActual) { mutableStateOf(usuarioActual!!.fotoUrl) }
 
+    // Estados UI
     var showPicker by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var showConfirm by remember { mutableStateOf(false) }
 
+    val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // Detectar si hubo cambios (para deshabilitar "Guardar cambios")
+    val huboCambios by remember(usuarioActual, nombre, email, fechaNacimiento, direccion, telefono, fotoUrl) {
+        mutableStateOf(
+            nombre.trim() != usuarioActual!!.nombre ||
+                    email.trim() != usuarioActual!!.email ||
+                    fechaNacimiento.trim() != usuarioActual!!.fechaNacimiento ||
+                    direccion.trim() != usuarioActual!!.direccion ||
+                    telefono.trim() != usuarioActual!!.telefono ||
+                    (fotoUrl ?: "") != (usuarioActual!!.fotoUrl ?: "")
+        )
+    }
 
     // Launchers: galería y cámara (preview)
     val pickFromFiles = rememberLauncherForActivityResult(
@@ -104,7 +137,8 @@ fun PerfilUsuarioScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -130,7 +164,7 @@ fun PerfilUsuarioScreen(
                         .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 )
             } else {
-                // Placeholder con logo
+                // Placeholder
                 Box(
                     modifier = Modifier
                         .size(132.dp)
@@ -174,17 +208,8 @@ fun PerfilUsuarioScreen(
             Spacer(Modifier.height(22.dp))
 
             Button(
-                onClick = {
-                    val actualizado = usuarioActual!!.copy(
-                        nombre = nombre.trim(),
-                        email = email.trim(),
-                        fechaNacimiento = fechaNacimiento.trim(),
-                        direccion = direccion.trim(),
-                        telefono = telefono.trim(),
-                        fotoUrl = fotoUrl
-                    )
-                    sessionViewModel.actualizarPerfil(actualizado) { msg -> error = msg }
-                },
+                onClick = { showConfirm = true }, // mostrar confirmación
+                enabled = huboCambios,            // deshabilitar si no hay cambios
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
@@ -193,8 +218,6 @@ fun PerfilUsuarioScreen(
             }
 
             Spacer(Modifier.height(8.dp))
-
-
         }
 
         // BottomSheet para elegir cámara o archivos
@@ -221,6 +244,49 @@ fun PerfilUsuarioScreen(
                 Spacer(Modifier.height(12.dp))
             }
         }
+
+        // Diálogo de confirmación
+        if (showConfirm) {
+            AlertDialog(
+                onDismissRequest = { showConfirm = false },
+                title = { Text("Confirmar cambios") },
+                text = { Text("¿Deseas guardar las modificaciones de tu perfil?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showConfirm = false
+                        // 1) Quitar el foco de los TextFields
+                        focusManager.clearFocus()
+
+                        // 2) Construir objeto actualizado y persistir
+                        val actualizado = usuarioActual!!.copy(
+                            nombre = nombre.trim(),
+                            email = email.trim(),
+                            fechaNacimiento = fechaNacimiento.trim(),
+                            direccion = direccion.trim(),
+                            telefono = telefono.trim(),
+                            fotoUrl = fotoUrl
+                        )
+
+                        sessionViewModel.actualizarPerfil(actualizado) { msg ->
+                            error = msg
+                            // 3) Feedback: snackbar si OK
+                            if (msg == null) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Perfil actualizado con éxito")
+                                }
+                            }
+                        }
+                    }) {
+                        Text("Guardar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirm = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -241,7 +307,7 @@ private fun PerfilField(
     )
 }
 
-/** Guarda un Bitmap en MediaStore y devuelve su Uri pública (Pictures/MrPastel). */
+// Guarda un Bitmap en MediaStore y devuelve su Uri pública (Pictures/MrPastel).
 private fun saveBitmapToGallery(
     context: Context,
     bitmap: Bitmap,

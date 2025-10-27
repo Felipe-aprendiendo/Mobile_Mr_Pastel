@@ -22,9 +22,8 @@ object CarritoRepository {
     private val _ultimoComprobante = MutableStateFlow<ComprobantePago?>(null)
     val ultimoComprobante: StateFlow<ComprobantePago?> = _ultimoComprobante
 
-    // -------------------------------
-    // 🧾 Lógica de cupón y descuentos
-    // -------------------------------
+    // Lógica de cupón y descuentos
+
     fun setCupon(codigo: String?) {
         _coupon.value = codigo?.takeIf { it.isNotBlank() }
     }
@@ -78,9 +77,7 @@ object CarritoRepository {
         return totalFinal
     }
 
-    // -------------------------------------------
-    // 🧮 Cálculo del resumen y generación comprob.
-    // -------------------------------------------
+    // Cálculo del resumen y generación comprob.
     data class ResumenPago(
         val subtotal: Double,
         val descuentoEtiqueta: String,

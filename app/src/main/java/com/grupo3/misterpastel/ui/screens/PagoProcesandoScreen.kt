@@ -16,14 +16,14 @@ import kotlinx.coroutines.delay
 @SuppressLint("UnrememberedGetBackStackEntry")
 @Composable
 fun PagoProcesandoScreen(navController: NavController) {
-    // ✅ Misma instancia de PagoViewModel anclada a "carrito"
+    // Misma instancia de PagoViewModel anclada a "carrito"
     val parentEntry = remember(navController) {
         navController.getBackStackEntry("carrito")
     }
     val pagoVM: PagoViewModel = viewModel(parentEntry)
     val comprobante by pagoVM.comprobante.collectAsState()
 
-    // 🔹 Validación de comprobante antes de continuar
+    // Validación de comprobante antes de continuar
     LaunchedEffect(comprobante) {
         if (comprobante == null) {
             // Si no hay comprobante válido, vuelve al carrito

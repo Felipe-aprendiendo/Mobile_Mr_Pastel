@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
+/**IMPORTANTE
  * ViewModel que maneja la sesión del usuario y sincroniza los datos
  * con la base de datos Room mediante UsuarioRepository.
  */
@@ -27,15 +27,14 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
             initialValue = null
         )
 
-    /** Cierra la sesión actual (borra el flujo de usuario en memoria). */
+    // Cierra la sesión actual (borra el flujo de usuario en memoria).
     fun logout() {
         repository.logout()
     }
 
-    /**
-     * Actualiza los datos del perfil en la base local.
-     * Este cambio se refleja automáticamente en la UI.
-     */
+
+    // Actualiza los datos del perfil en la base local.Este cambio se refleja automáticamente en la UI.
+
     fun actualizarPerfil(actualizado: Usuario, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val result = repository.actualizarPerfil(actualizado)
@@ -43,7 +42,7 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /** Actualiza solo la foto de perfil del usuario actual. */
+    // Actualiza solo la foto de perfil del usuario actual.
     fun actualizarFoto(fotoUrl: String?, onError: (String) -> Unit = {}) {
         val usuario = usuarioActual.value ?: return
         val actualizado = usuario.copy(fotoUrl = fotoUrl)

@@ -24,9 +24,9 @@ class PerfilViewModel : ViewModel() {
         cargarDatosUsuario()
     }
 
-    /**
-     * Carga un usuario de ejemplo.
-     */
+
+    // Carga un usuario de ejemplo.
+
     private fun cargarDatosUsuario() {
         viewModelScope.launch {
             _usuario.value = Usuario(

@@ -29,12 +29,12 @@ fun PedidoScreen(
     navController: NavController,
     pedidoViewModel: PedidoViewModel = viewModel()
 ) {
-    // ✅ Contexto necesario para acceder a Room
+    // Contexto necesario para acceder a Room
     val context = LocalContext.current
     val usuarioRepo = remember { UsuarioRepository.getInstance(context) }
     val usuarioActual by usuarioRepo.usuarioActual.collectAsState()
 
-    // ✅ Cargar pedidos del usuario autenticado cuando cambia
+    // Cargar pedidos del usuario autenticado
     LaunchedEffect(usuarioActual) {
         if (usuarioActual != null) {
             pedidoViewModel.setUserId(usuarioActual!!.id)
@@ -66,7 +66,7 @@ fun PedidoScreen(
                 .padding(16.dp)
         ) {
             when {
-                // 🚫 Usuario no autenticado
+                // Usuario no autenticado
                 usuarioActual == null -> {
                     Text(
                         text = "Inicia sesión para ver tus pedidos 🍰",
@@ -76,7 +76,7 @@ fun PedidoScreen(
                     )
                 }
 
-                // 📭 Sin pedidos registrados
+                // Sin pedidos registrados
                 pedidos.isEmpty() -> {
                     Text(
                         text = "Aún no has realizado pedidos 🍰",
@@ -86,7 +86,7 @@ fun PedidoScreen(
                     )
                 }
 
-                // ✅ Mostrar pedidos
+                // Mostrar pedidos
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -119,7 +119,7 @@ fun PedidoCard(pedido: Pedido) {
                 .background(MaterialTheme.colorScheme.surface),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 🧾 Cabecera del pedido
+            // Cabecera del pedido
             Text(
                 text = "Pedido Nº ${pedido.id}",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -127,7 +127,7 @@ fun PedidoCard(pedido: Pedido) {
             )
             Text("Fecha: $fechaFormateada")
 
-            // 🟢 Estado dinámico con color según el progreso
+            // Estado dinámico con color según el progreso
             Text(
                 text = "Estado: ${pedido.estado.name}",
                 color = when (pedido.estado) {
@@ -141,7 +141,7 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // 📦 Productos del pedido
+            // Productos del pedido
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 pedido.items.forEach { item ->
                     Row(
@@ -156,7 +156,7 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // 💰 Total
+            // Total
             Text(
                 text = "Total: $${pedido.total}",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),

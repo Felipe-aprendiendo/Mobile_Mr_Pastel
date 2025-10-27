@@ -9,10 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel encargado de manejar la autenticación del usuario.
- * Se comunica con la base de datos local (Room) a través de UsuarioRepository.
- */
+
+ // Se comunica con la base de datos local (Room) a través de UsuarioRepository.
+
 class AutenticarViewModel(application: Application) : AndroidViewModel(application) {
 
     // Instancia del repositorio con persistencia local (Room)

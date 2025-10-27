@@ -10,8 +10,8 @@ import com.grupo3.misterpastel.repository.PedidoRepository
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-/**
- * ViewModel responsable de gestionar los pedidos:
+/**IMPORTANTE
+ * Responsable de gestionar los pedidos:
  * - Lee los pedidos persistidos en Room (SQLite).
  * - Permite crear o registrar pedidos nuevos.
  * - Actualiza el estado de los pedidos.
@@ -30,17 +30,16 @@ class PedidoViewModel(application: Application) : AndroidViewModel(application) 
             repository.obtenerPedidosPorUsuario(id).asLiveData()
         }
 
-    /**
-     * Define el usuario actual para filtrar sus pedidos.
-     * Llamar desde SessionViewModel o al iniciar sesión.
-     */
+
+     // Define el usuario actual para filtrar sus pedidos.
+
     fun setUserId(id: String) {
         _userId.value = id
     }
 
-    /**
-     * Inserta un nuevo pedido en Room a partir de los items del carrito.
-     */
+
+     // Inserta un nuevo pedido en Room a partir de los items del carrito.
+
     fun crearPedido(userId: String, carritoItems: List<CarritoItem>, total: Double) {
         viewModelScope.launch {
             val nuevoPedido = Pedido(
@@ -55,18 +54,18 @@ class PedidoViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    /**
-     * Registra un nuevo pedido en Room a partir de un comprobante de pago.
-     */
+
+     // Registra un nuevo pedido en Room a partir de un comprobante de pago.
+
     fun registrarPedidoDesdeComprobante(userId: String, comprobante: ComprobantePago) {
         viewModelScope.launch {
             repository.insertarPedidoDesdeComprobante(userId, comprobante)
         }
     }
 
-    /**
-     * Actualiza el estado de un pedido existente (por ejemplo: PREPARANDO → ENTREGADO).
-     */
+
+     // Actualiza el estado de un pedido existente (por ejemplo: PREPARANDO → ENTREGADO).
+
     fun actualizarEstadoPedido(pedidoId: String, nuevoEstado: EstadoPedido) {
         val pedidosActuales = pedidos.value?.toMutableList() ?: return
         val indice = pedidosActuales.indexOfFirst { it.id == pedidoId }
