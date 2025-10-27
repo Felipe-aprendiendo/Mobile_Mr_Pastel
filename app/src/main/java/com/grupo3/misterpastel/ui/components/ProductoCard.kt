@@ -26,7 +26,7 @@ fun ProductoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(260.dp),
+            .height(300.dp),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -42,8 +42,9 @@ fun ProductoCard(
                 painter = painterResource(id = producto.imagen),
                 contentDescription = producto.nombre,
                 modifier = Modifier
-                    .size(120.dp)
-                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .height(150.dp), // Altura fija para la imagen
+                contentScale = ContentScale.Crop // Recorta para llenar
             )
 
             // Texto del nombre centrado horizontalmente
