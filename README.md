@@ -40,63 +40,63 @@ Room (persistencia local: @Entity, @Dao, @Database)
 
 ## 📂 Estructura del proyecto
 
-app/
- └─ src/main/java/com/grupo3/misterpastel/
-    ├─ MainActivity.kt
-    ├─ navigation/
-    │   └─ AppNavigation.kt
-    ├─ ui/
-    │   ├─ components/
-    │   │   └─ ProductoCard.kt
-    │   ├─ screens/
-    │   │   ├─ HomeScreen.kt
-    │   │   ├─ HomeSesionIniciada.kt
-    │   │   ├─ LoginScreen.kt
-    │   │   ├─ RegistroScreen.kt
-    │   │   ├─ DetalleProductoScreen.kt
-    │   │   ├─ CarritoScreen.kt
-    │   │   ├─ PagoProcesandoScreen.kt
-    │   │   ├─ ComprobantePagoScreen.kt
-    │   │   ├─ PedidoScreen.kt
-    │   │   ├─ PerfilUsuarioScreen.kt   ← cámara/archivos
-    │   │   └─ splash/SplashScreen.kt
-    │   └─ theme/
-    │       ├─ Color.kt
-    │       ├─ Theme.kt
-    │       └─ Type.kt
-    ├─ viewmodel/
-    │   ├─ LoginViewModel.kt
-    │   ├─ RegistroViewModel.kt
-    │   ├─ SessionViewModel.kt
-    │   ├─ CatalogoViewModel.kt
-    │   ├─ CarritoViewModel.kt
-    │   ├─ PagoViewModel.kt
-    │   └─ PedidoViewModel.kt
-    ├─ model/
-    │   ├─ Usuario.kt
-    │   ├─ Producto.kt
-    │   ├─ CarritoItem.kt (+ extensión subtotal)
-    │   ├─ Carrito.kt
-    │   ├─ Pedido.kt
-    │   ├─ ComprobantePago.kt
-    │   ├─ Categoria.kt
-    │   └─ EstadoPedido.kt
-    └─ repository/
-        ├─ ProductoRepository.kt
-        ├─ UsuarioRepository.kt   ← registro/login con BCrypt
-        ├─ CarritoRepository.kt   ← descuentos/cupones/comprobante
-        ├─ PedidoRepository.kt
-        └─ local/                 ← ROOM
-            ├─ AppDatabase.kt
-            ├─ ProductoEntity.kt
-            ├─ ProductoDao.kt
-            ├─ UsuarioEntity.kt
-            ├─ UsuarioDao.kt
-            ├─ PedidoEntity.kt
-            └─ PedidoDao.kt
-
-res/
- ├─ drawable/ (imágenes del catálogo y logos)
+    app/
+     └─ src/main/java/com/grupo3/misterpastel/
+        ├─ MainActivity.kt
+        ├─ navigation/
+        │   └─ AppNavigation.kt
+        ├─ ui/
+        │   ├─ components/
+        │   │   └─ ProductoCard.kt
+        │   ├─ screens/
+        │   │   ├─ HomeScreen.kt
+        │   │   ├─ HomeSesionIniciada.kt
+        │   │   ├─ LoginScreen.kt
+        │   │   ├─ RegistroScreen.kt
+        │   │   ├─ DetalleProductoScreen.kt
+        │   │   ├─ CarritoScreen.kt
+        │   │   ├─ PagoProcesandoScreen.kt
+        │   │   ├─ ComprobantePagoScreen.kt
+        │   │   ├─ PedidoScreen.kt
+        │   │   ├─ PerfilUsuarioScreen.kt   ← cámara/archivos
+        │   │   └─ splash/SplashScreen.kt
+        │   └─ theme/
+        │       ├─ Color.kt
+        │       ├─ Theme.kt
+        │       └─ Type.kt
+        ├─ viewmodel/
+        │   ├─ LoginViewModel.kt
+        │   ├─ RegistroViewModel.kt
+        │   ├─ SessionViewModel.kt
+        │   ├─ CatalogoViewModel.kt
+        │   ├─ CarritoViewModel.kt
+        │   ├─ PagoViewModel.kt
+        │   └─ PedidoViewModel.kt
+        ├─ model/
+        │   ├─ Usuario.kt
+        │   ├─ Producto.kt
+        │   ├─ CarritoItem.kt (+ extensión subtotal)
+        │   ├─ Carrito.kt
+        │   ├─ Pedido.kt
+        │   ├─ ComprobantePago.kt
+        │   ├─ Categoria.kt
+        │   └─ EstadoPedido.kt
+        └─ repository/
+            ├─ ProductoRepository.kt
+            ├─ UsuarioRepository.kt   ← registro/login con BCrypt
+            ├─ CarritoRepository.kt   ← descuentos/cupones/comprobante
+            ├─ PedidoRepository.kt
+            └─ local/                 ← ROOM
+                ├─ AppDatabase.kt
+                ├─ ProductoEntity.kt
+                ├─ ProductoDao.kt
+                ├─ UsuarioEntity.kt
+                ├─ UsuarioDao.kt
+                ├─ PedidoEntity.kt
+                └─ PedidoDao.kt
+    
+    res/
+     ├─ drawable/ (imágenes del catálogo y logos)
 
  
 ---
