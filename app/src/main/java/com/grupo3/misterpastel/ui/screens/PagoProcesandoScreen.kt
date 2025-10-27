@@ -21,16 +21,25 @@ fun PagoProcesandoScreen(navController: NavController) {
         navController.getBackStackEntry("carrito")
     }
     val pagoVM: PagoViewModel = viewModel(parentEntry)
+    val comprobante by pagoVM.comprobante.collectAsState()
 
-    LaunchedEffect(Unit) {
-        delay(2000)
-        navController.navigate("comprobante_pago") {
-            popUpTo("procesando_pago") { inclusive = true }
+    // 🔹 Validación de comprobante antes de continuar
+    LaunchedEffect(comprobante) {
+        if (comprobante == null) {
+            // Si no hay comprobante válido, vuelve al carrito
+            navController.popBackStack("carrito", inclusive = false)
+        } else {
+            delay(2000)
+            navController.navigate("comprobante_pago") {
+                popUpTo("procesando_pago") { inclusive = true }
+            }
         }
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
