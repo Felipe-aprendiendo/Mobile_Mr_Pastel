@@ -16,6 +16,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MrPastelTheme {
+
                 AppNavigation()
             }
 
