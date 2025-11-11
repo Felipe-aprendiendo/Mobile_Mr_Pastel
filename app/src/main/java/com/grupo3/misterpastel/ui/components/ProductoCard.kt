@@ -2,19 +2,20 @@ package com.grupo3.misterpastel.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Producto
 
 @Composable
@@ -23,31 +24,44 @@ fun ProductoCard(
     onVerDetalles: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    // 🔹 Resuelve el nombre del drawable a un ID de recurso
+    val imageId = remember(producto.imagen) {
+        context.resources.getIdentifier(producto.imagen, "drawable", context.packageName)
+    }
+
+    // 🔹 Usa placeholder si no se encuentra la imagen
+    val painter = painterResource(
+        id = if (imageId != 0) imageId else R.drawable.placeholder
+    )
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(300.dp),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally, // centra los hijos
-            verticalArrangement = Arrangement.Center, // centra verticalmente
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(8.dp)
-                .fillMaxSize() // asegura que la columna ocupe toda la tarjeta
+                .fillMaxSize()
         ) {
+            // Imagen del producto
             Image(
-                painter = painterResource(id = producto.imagen),
+                painter = painter,
                 contentDescription = producto.nombre,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp), // Altura fija para la imagen
-                contentScale = ContentScale.Crop // Recorta para llenar
+                    .height(150.dp),
+                contentScale = ContentScale.Crop
             )
 
-            // Texto del nombre centrado horizontalmente
+            // Nombre
             Text(
                 text = producto.nombre,
                 style = MaterialTheme.typography.bodyLarge.copy(
@@ -59,7 +73,7 @@ fun ProductoCard(
                     .padding(vertical = 10.dp)
             )
 
-            // Texto del precio centrado horizontalmente
+            // Precio
             Text(
                 text = producto.precio,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -71,7 +85,7 @@ fun ProductoCard(
                     .padding(vertical = 4.dp)
             )
 
-            // Botón
+            // Botón "Ver detalles"
             Button(
                 onClick = { onVerDetalles(producto) },
                 modifier = Modifier

@@ -6,23 +6,30 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 /**
- * Base de datos central de la app.
- * Incluye pedidos (persistencia de compras) y usuarios (sesiones y perfil).
+ * Base de datos central de la aplicación Mr. Pastel.
  *
- * MOD:
- * - Se añadió ProductoEntity y su DAO.
- * - Se incrementó la version de 2 a 3 (nuevo schema).
+ * Incluye:
+ *  - PedidoEntity → Persistencia de pedidos (historial de compras)
+ *  - UsuarioEntity → Datos de usuarios y sesiones
+ *  - ProductoEntity → Catálogo persistente de productos
+ *
+ * 🔹 Usa Room 2.6+ con `StateFlow` en los repositorios.
+ * 🔹 Se mantiene `fallbackToDestructiveMigration()` solo para entorno de desarrollo.
+ *    (⚠️ En producción debería reemplazarse por migraciones explícitas.)
  */
 @Database(
-    entities = [PedidoEntity::class, UsuarioEntity::class, ProductoEntity::class], // MOD: agregar ProductoEntity
-    version = 3, // MOD: antes era 2
+    entities = [
+        PedidoEntity::class,
+        UsuarioEntity::class,
+        ProductoEntity::class],
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun pedidoDao(): PedidoDao
     abstract fun usuarioDao(): UsuarioDao
-    abstract fun productoDao(): ProductoDao // MOD: nuevo DAO
+    abstract fun productoDao(): ProductoDao
 
     companion object {
         @Volatile
@@ -35,7 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "mrpastel_db"
                 )
-                    // MOD: mantenemos destructive migration por simplicidad en desarrollo
+                    // ⚠️ Borra y recrea la BD al cambiar schema (solo para desarrollo)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

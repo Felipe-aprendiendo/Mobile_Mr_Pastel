@@ -10,7 +10,7 @@ data class Producto(
     val id: Int,
     val nombre: String,
     val precio: String,
-    @DrawableRes val imagen: Int, //ver el comentario que dejé abajo
+    val imagen: String, // ahora guarda el nombre del recurso
     val categoria: Categoria,
     val descripcion: String
 )
