@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
 import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 
@@ -31,7 +33,6 @@ fun DetalleProductoScreen(
     catalogoViewModel: CatalogoViewModel = viewModel(),
     carritoViewModel: CarritoViewModel = viewModel()
 ) {
-    // Obtenemos el producto una sola vez por id
     val producto = remember(productoId) { catalogoViewModel.getProductoById(productoId) }
 
     if (producto == null) {
@@ -41,9 +42,13 @@ fun DetalleProductoScreen(
         return
     }
 
-    // Observamos el carrito compartido y derivamos la cantidad del producto
     val items by carritoViewModel.items.collectAsState()
     val cantidad = items.firstOrNull { it.producto.id == productoId }?.cantidad ?: 0
+
+    val context = LocalContext.current
+    val imageId = remember(producto.imagen) {
+        context.resources.getIdentifier(producto.imagen, "drawable", context.packageName)
+    }
 
     Scaffold(
         topBar = {
@@ -72,8 +77,9 @@ fun DetalleProductoScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // ✅ Imagen del producto
             Image(
-                painter = painterResource(id = producto.imagen),
+                painter = painterResource(id = if (imageId != 0) imageId else R.drawable.placeholder),
                 contentDescription = producto.nombre,
                 modifier = Modifier
                     .size(250.dp)
@@ -104,9 +110,7 @@ fun DetalleProductoScreen(
 
                 AnimatedContent(targetState = cantidad) { cantidadActual ->
                     if (cantidadActual == 0) {
-                        Button(
-                            onClick = { carritoViewModel.agregar(producto, 1) }
-                        ) {
+                        Button(onClick = { carritoViewModel.agregar(producto, 1) }) {
                             Text("Agregar")
                         }
                     } else {
@@ -119,23 +123,21 @@ fun DetalleProductoScreen(
                                     carritoViewModel.actualizarCantidad(producto.id, cantidadActual - 1)
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp)
-                            ) {
-                                Text("-", fontSize = 20.sp)
-                            }
+                            ) { Text("-", fontSize = 20.sp) }
+
                             Text(
                                 text = cantidadActual.toString(),
                                 fontSize = 18.sp,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.width(30.dp)
                             )
+
                             OutlinedButton(
                                 onClick = {
                                     carritoViewModel.actualizarCantidad(producto.id, cantidadActual + 1)
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp)
-                            ) {
-                                Text("+", fontSize = 20.sp)
-                            }
+                            ) { Text("+", fontSize = 20.sp) }
                         }
                     }
                 }
