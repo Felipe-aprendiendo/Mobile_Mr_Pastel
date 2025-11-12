@@ -5,12 +5,14 @@ import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.repository.local.AppDatabase
 import com.grupo3.misterpastel.repository.local.ProductoEntity
+import com.grupo3.misterpastel.repository.remote.ProductoRemoteDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Repository principal del catálogo de productos.
@@ -22,6 +24,7 @@ import kotlinx.coroutines.launch
 class ProductoRepository private constructor(context: Context) {
 
     private val dao = AppDatabase.getDatabase(context).productoDao()
+    private val remoteDataSource = ProductoRemoteDataSource()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _productos = MutableStateFlow<List<Producto>>(emptyList())
@@ -74,11 +77,40 @@ class ProductoRepository private constructor(context: Context) {
     init {
         scope.launch {
             if (dao.contar() == 0) {
+                // Primera carga: usa semilla local para evitar pantalla vacía
                 dao.insertarProductos(initialCatalog.map { it.toEntity() })
             }
+            // Observa continuamente los cambios locales
             dao.obtenerTodos().collect { entities ->
                 _productos.value = entities.map { it.toModel() }
             }
+        }
+    }
+
+    /**
+     * Sincroniza el catálogo desde la API remota (Retrofit).
+     * Descarga los productos y actualiza la base local (Room).
+     */
+    suspend fun sincronizarDesdeApi(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = remoteDataSource.obtenerProductos()
+            if (response.isSuccessful) {
+                val productosRemotos = response.body().orEmpty()
+
+                // Actualiza base local
+                dao.eliminarTodos()
+                dao.insertarProductos(productosRemotos.map { it.toEntity() })
+
+                // Refresca el StateFlow manualmente
+                _productos.value = productosRemotos
+                true
+            } else {
+                println("⚠️ Error al sincronizar productos: ${response.code()} ${response.message()}")
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 
@@ -94,7 +126,7 @@ class ProductoRepository private constructor(context: Context) {
         }
     }
 
-    // === Mapeos ===
+    // === Mapeos entre entity y model ===
     private fun ProductoEntity.toModel(): Producto = Producto(
         id = id,
         nombre = nombre,
