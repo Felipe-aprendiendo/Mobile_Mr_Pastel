@@ -8,6 +8,7 @@ import com.grupo3.misterpastel.repository.ProductoRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * IMPORTANTE:
@@ -28,4 +29,13 @@ class CatalogoViewModel(application: Application) : AndroidViewModel(application
     fun getProductoById(id: Int): Producto? {
         return productoRepository.getProductoById(id)
     }
+
+    fun cargarDesdeApi() {
+        viewModelScope.launch {
+            productoRepository.sincronizarDesdeApi()
+        }
+    }
+
+
+
 }
