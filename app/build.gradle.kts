@@ -68,8 +68,12 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.google.gson)
-
-
-    // 🔐 BCrypt para hashear contraseñas
+    //BCrypt para hashear contraseñas
     implementation("org.mindrot:jbcrypt:0.4")
+    // Retrofit y OkHttp para consumo de API REST
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
 }
