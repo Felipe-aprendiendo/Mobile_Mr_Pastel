@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitInstance {
 
-    private const val BASE_URL = "https://my-json-server.typicode.com/Felipe-aprendiendo/mrpastel-api/productos/"
+    private const val BASE_URL = "https://my-json-server.typicode.com/Felipe-aprendiendo/mrpastel-api/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

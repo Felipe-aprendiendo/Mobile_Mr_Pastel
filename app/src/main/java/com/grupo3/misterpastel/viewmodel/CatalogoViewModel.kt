@@ -11,14 +11,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * IMPORTANTE:
- * - Cambiado a AndroidViewModel para acceder a Application y obtener el Repository Singleton con Room.
- * - Sin cambios en la API pública hacia la UI.
+ * ViewModel del catálogo de productos.
+ * Se comunica con ProductoRepository para acceder a datos locales y remotos.
+ *
+ * 🔹 Mantiene el estado del catálogo mediante StateFlow.
+ * 🔹 Permite sincronizar los datos desde la API (Retrofit) y almacenarlos en Room.
  */
 class CatalogoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val productoRepository = ProductoRepository.getInstance(application) // MOD: ahora via Singleton con Room
+    private val productoRepository = ProductoRepository.getInstance(application)
 
+    // Estado observable del catálogo
     val productos: StateFlow<List<Producto>> = productoRepository.productos
         .stateIn(
             scope = viewModelScope,
@@ -26,16 +29,25 @@ class CatalogoViewModel(application: Application) : AndroidViewModel(application
             initialValue = emptyList()
         )
 
+    /**
+     * Obtiene un producto específico por su ID.
+     */
     fun getProductoById(id: Int): Producto? {
         return productoRepository.getProductoById(id)
     }
 
+    /**
+     * Descarga los productos desde la API remota y sincroniza Room.
+     * Se puede llamar desde una pantalla (ej: HomeSesionIniciada) o al iniciar la app.
+     */
     fun cargarDesdeApi() {
         viewModelScope.launch {
-            productoRepository.sincronizarDesdeApi()
+            val exito = productoRepository.sincronizarDesdeApi()
+            if (exito) {
+                println("✅ Catálogo sincronizado correctamente desde la API remota.")
+            } else {
+                println("⚠️ No se pudo sincronizar el catálogo (problema de red o servidor).")
+            }
         }
     }
-
-
-
 }

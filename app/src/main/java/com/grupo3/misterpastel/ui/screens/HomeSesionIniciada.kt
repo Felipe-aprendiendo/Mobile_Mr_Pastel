@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
@@ -27,7 +28,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Categoria
-import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.ui.components.ProductoCard
 import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 import com.grupo3.misterpastel.viewmodel.SessionViewModel
@@ -50,11 +50,19 @@ fun HomeSesionIniciada(
     // Productos fuente
     val productos by catalogoViewModel.productos.collectAsState()
 
-    // Estado de UI: buscador + categoría seleccionada
-    var query by remember { mutableStateOf("") }
-    var categoriaSel: Categoria? by remember { mutableStateOf(null) } // null = Todos
+    // Estado de carga
+    var isLoading by remember { mutableStateOf(true) }
 
-    // Filtrado combinado
+    // Sincronización automática al abrir pantalla
+    LaunchedEffect(Unit) {
+        catalogoViewModel.cargarDesdeApi()
+        isLoading = false
+    }
+
+    // Estado UI: búsqueda y categoría
+    var query by remember { mutableStateOf("") }
+    var categoriaSel: Categoria? by remember { mutableStateOf(null) }
+
     val productosFiltrados = remember(query, categoriaSel, productos) {
         productos.filter { p ->
             val okCategoria = categoriaSel?.let { p.categoria == it } ?: true
@@ -73,14 +81,10 @@ fun HomeSesionIniciada(
             title = { Text("Inicio de Sesión Requerido") },
             text = { Text("Para acceder al carrito y continuar con la compra, necesitas iniciar sesión.") },
             confirmButton = {
-                Button(
-                    onClick = {
-                        showLoginDialog = false
-                        navController.navigate("login")
-                    }
-                ) {
-                    Text("Iniciar Sesión")
-                }
+                Button(onClick = {
+                    showLoginDialog = false
+                    navController.navigate("login")
+                }) { Text("Iniciar Sesión") }
             },
             dismissButton = {
                 TextButton(onClick = { showLoginDialog = false }) {
@@ -127,6 +131,21 @@ fun HomeSesionIniciada(
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Filled.Menu, contentDescription = "Menú")
                         }
+                    },
+                    actions = {
+                        // Botón para refrescar manualmente el catálogo
+                        IconButton(onClick = {
+                            scope.launch {
+                                isLoading = true
+                                catalogoViewModel.cargarDesdeApi()
+                                isLoading = false
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = "Refrescar catálogo"
+                            )
+                        }
                     }
                 )
             }
@@ -138,6 +157,14 @@ fun HomeSesionIniciada(
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+
+                // Indicador de carga inicial
+                if (isLoading && productos.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                    return@Column
+                }
 
                 // Buscar
                 OutlinedTextField(
@@ -151,7 +178,6 @@ fun HomeSesionIniciada(
 
                 Spacer(Modifier.height(10.dp))
 
-                // Chips de categorías (incluye "Todos")
                 CategoriaChipsRow(
                     categoriaSeleccionada = categoriaSel,
                     onSelect = { categoriaSel = it }
@@ -199,7 +225,7 @@ fun HomeSesionIniciada(
     }
 }
 
-/* ================= Drawer ================= */
+/* ==================== Drawer ==================== */
 
 @Composable
 fun DrawerContent(
@@ -233,10 +259,7 @@ fun DrawerContent(
 }
 
 @Composable
-fun DrawerItem(
-    text: String,
-    onClick: () -> Unit
-) {
+fun DrawerItem(text: String, onClick: () -> Unit) {
     Text(
         text = text,
         modifier = Modifier
