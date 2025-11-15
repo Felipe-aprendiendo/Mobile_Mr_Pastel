@@ -8,11 +8,13 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Configuración Singleton de Retrofit.
- * Incluye cliente OkHttp con logs de red y convertidor Gson.
+ * Se conecta a la API REST creada en Oracle APEX.
  */
 object RetrofitInstance {
 
-    private const val BASE_URL = "https://my-json-server.typicode.com/Felipe-aprendiendo/mrpastel-api/"
+    // ✔ Base URL correcta (termina con /api/)
+    private const val BASE_URL =
+        "https://g382daee58087c5-mrpastelreact.adb.sa-santiago-1.oraclecloudapps.com/ords/mr_pastel/api/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -26,7 +28,7 @@ object RetrofitInstance {
 
     val api: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BASE_URL) // ✔ Retrofit concatenará "productos/" desde ApiService
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient)
             .build()
