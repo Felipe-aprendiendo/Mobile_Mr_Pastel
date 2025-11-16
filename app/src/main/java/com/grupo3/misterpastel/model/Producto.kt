@@ -6,9 +6,10 @@ data class Producto(
     val id: Int,
     val nombre: String,
     val precio: String,
-    val imagen: String, // ahora guarda el nombre del recurso
+    val imagen: String,            // URL Cloudinary (principal)
     val categoria: Categoria,
-    val descripcion: String
+    val descripcion: String,
+    val imagenLocal: String? = null   // Fallback offline (opcional)
 )
 
 

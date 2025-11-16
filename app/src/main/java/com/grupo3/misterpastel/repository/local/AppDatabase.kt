@@ -22,7 +22,7 @@ import androidx.room.RoomDatabase
         PedidoEntity::class,
         UsuarioEntity::class,
         ProductoEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
