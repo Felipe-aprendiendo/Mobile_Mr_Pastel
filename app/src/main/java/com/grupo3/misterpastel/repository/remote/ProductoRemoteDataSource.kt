@@ -1,15 +1,17 @@
 package com.grupo3.misterpastel.repository.remote
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import retrofit2.Response
-
+/**
+ * Fuente de datos remotos para los productos.
+ * Encapsula las llamadas a Retrofit.
+ */
 class ProductoRemoteDataSource {
 
     private val api = RetrofitInstance.api
 
-    suspend fun obtenerProductos(): Response<ProductosResponse> =
-        withContext(Dispatchers.IO) {
-            api.getProductos()  // ⬅️ ESTE ERA EL PROBLEMA
-        }
+    /**
+     * Ejecuta la llamada a la API.
+     * ⚠ Esta función ya es 'suspend', así que NO necesita withContext aquí.
+     * El ViewModel/Repository controla el dispatcher.
+     */
+    suspend fun obtenerProductos() = api.getProductos()
 }

@@ -6,13 +6,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-/**
- * Configuración Singleton de Retrofit.
- * Se conecta a la API REST creada en Oracle APEX.
- */
 object RetrofitInstance {
 
-    // ✔ Base URL correcta (termina con /api/)
+    // ✔ BASE URL correcta — NO debe incluir "productos/"
     private const val BASE_URL =
         "https://g382daee58087c5-mrpastelreact.adb.sa-santiago-1.oraclecloudapps.com/ords/mr_pastel/api/"
 
@@ -28,7 +24,7 @@ object RetrofitInstance {
 
     val api: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL) // ✔ Retrofit concatenará "productos/" desde ApiService
+            .baseUrl(BASE_URL)    // ✔ Retrofit agregará "productos/" desde ApiService
             .addConverterFactory(GsonConverterFactory.create())
             .client(httpClient)
             .build()
