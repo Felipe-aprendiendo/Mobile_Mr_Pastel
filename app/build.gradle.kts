@@ -75,5 +75,11 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.junit4)
+    androidTestImplementation(libs.navigation.testing)
+
 
 }
