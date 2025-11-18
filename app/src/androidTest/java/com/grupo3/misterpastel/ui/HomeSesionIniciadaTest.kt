@@ -7,6 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
+import com.grupo3.misterpastel.navigation.TestNavHost
 import com.grupo3.misterpastel.ui.screens.HomeSesionIniciada
 import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
 import com.grupo3.misterpastel.viewmodel.SessionViewModel
@@ -80,23 +81,26 @@ class HomeSesionIniciadaTest {
         composeTestRule.setContent {
             navController = rememberNavController()
 
-            HomeSesionIniciada(
+            TestNavHost(
                 navController = navController,
-                catalogoViewModel = catalogoVM,
-                sessionViewModel = sessionVM
+                startDestination = "home_iniciada",
+                homeSesionIniciadaContent = {
+                    HomeSesionIniciada(
+                        navController = navController,
+                        catalogoViewModel = catalogoVM,
+                        sessionViewModel = sessionVM
+                    )
+                }
             )
         }
 
-        // CLIC REAL SOBRE EL BOTÓN REAL
-        composeTestRule
-            .onNodeWithTag("verDetalles_1")
-            .performClick()
+        // Click real del botón en tu ProductoCard
+        composeTestRule.onNodeWithTag("verDetalles_1").performClick()
 
         composeTestRule.waitForIdle()
 
-        val route = navController.currentBackStackEntry?.destination?.route
-
-        assert(route?.startsWith("detalle") == true)
+        assert(navController.currentBackStackEntry?.destination?.route?.startsWith("detalle") == true)
     }
+
 
 }
