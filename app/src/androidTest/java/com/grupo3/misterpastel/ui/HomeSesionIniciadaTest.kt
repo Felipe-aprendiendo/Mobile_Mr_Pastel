@@ -94,7 +94,7 @@ class HomeSesionIniciadaTest {
             )
         }
 
-        // Click real del botón en tu ProductoCard
+        // Click real del botón en  ProductoCard
         composeTestRule.onNodeWithTag("verDetalles_1").performClick()
 
         composeTestRule.waitForIdle()
@@ -104,3 +104,15 @@ class HomeSesionIniciadaTest {
 
 
 }
+
+/*Lo del click en el botón real del ProductoCard es clave porque esa es la acción que ejecuta onVerDetalles(producto) y de ahí se navega hacia "detalle/{id}"
+* Para ello se agregó un modifier testag en el onCLick del botón.
+*
+*
+* Button(
+    onClick = { onVerDetalles(producto) },
+    modifier = Modifier.testTag("verDetalles_${producto.id}")
+)
+*
+* Esto permitirá detectar cualquier modificación del botón, o si es que se rompe el onClick del botón o algo similar
+* */
