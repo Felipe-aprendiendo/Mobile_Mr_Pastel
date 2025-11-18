@@ -56,6 +56,18 @@ android {
         unitTests.isIncludeAndroidResources = true
         animationsDisabled = true
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/*.kotlin_module"
+            excludes += "META-INF/AL2.0"
+            excludes += "META-INF/LGPL2.1"
+        }
+    }
 }
 
 dependencies {
@@ -120,7 +132,7 @@ dependencies {
     androidTestImplementation(libs.junit4)
 
     // Navigation Testing (para simular NavController)
-    androidTestImplementation(libs.navigation.testing)
+    //androidTestImplementation(libs.navigation.testing) Esto lo comenté porque estaba implementando junit5 de forma transitiva, lo que producía un error al realizar pruebas unitarias de homsesesioniniciadatest
 
     // BOM de Compose para pruebas
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -128,4 +140,8 @@ dependencies {
     // Manifest especial para test UI (solo en debug)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    //Dependencia mockk para androidtest
+    androidTestImplementation("io.mockk:mockk-android:1.13.8")
+
 }

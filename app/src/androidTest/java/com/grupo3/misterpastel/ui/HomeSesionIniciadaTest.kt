@@ -1,13 +1,18 @@
 package com.grupo3.misterpastel.ui
 
-
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.grupo3.misterpastel.model.Categoria
 import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.ui.screens.HomeSesionIniciada
+import com.grupo3.misterpastel.viewmodel.CatalogoViewModel
+import com.grupo3.misterpastel.viewmodel.SessionViewModel
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,78 +23,74 @@ class HomeSesionIniciadaTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    /**
-     * Datos falsos para el catálogo
-     */
     private val fakeProducts = listOf(
         Producto(
-            id = "1",
+            id = 1,
             nombre = "Torta Chocolate",
-            categoria = "Tortas",
-            precio = 15000,
-            descripcion = "Deliciosa torta de chocolate",
-            imagen = ""
+            precio = "15000",
+            imagen = "",
+            categoria = Categoria.TORTA_CIRCULAR,
+            descripcion = "Deliciosa torta de chocolate"
         ),
         Producto(
-            id = "2",
+            id = 2,
             nombre = "Cheesecake Frutilla",
-            categoria = "Cheesecakes",
-            precio = 18000,
-            descripcion = "Fresco y cremoso",
-            imagen = ""
+            precio = "18000",
+            imagen = "",
+            categoria = Categoria.POSTRE_INDIVIDUAL,
+            descripcion = "Fresco y cremoso"
         )
     )
 
-    /**
-     * Test 1:
-     * La pantalla debe renderizar los productos del catálogo
-     */
     @Test
     fun homeSesionIniciada_renderizaProductos() {
+
+        // MOCK DEL CATALOGO VIEWMODEL
+        val catalogoVM = mockk<CatalogoViewModel>(relaxed = true)
+        every { catalogoVM.productos } returns MutableStateFlow(fakeProducts)
+
+        // MOCK DEL SESSION VIEWMODEL
+        val sessionVM = mockk<SessionViewModel>(relaxed = true)
+        every { sessionVM.usuarioActual } returns MutableStateFlow(null)
+
         composeTestRule.setContent {
             val navController = rememberNavController()
             HomeSesionIniciada(
                 navController = navController,
-                catalogoViewModel = FakeCatalogoViewModel(fakeProducts),
-                sessionViewModel = FakeSessionViewModel()
+                catalogoViewModel = catalogoVM,
+                sessionViewModel = sessionVM
             )
         }
 
-        composeTestRule
-            .onNodeWithText("Torta Chocolate")
-            .assertIsDisplayed()
-
-        composeTestRule
-            .onNodeWithText("Cheesecake Frutilla")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Torta Chocolate").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Cheesecake Frutilla").assertIsDisplayed()
     }
 
-    /**
-     * Test 2:
-     * Click en un producto → navegación hacia "detalle/{productoId}"
-     */
     @Test
     fun homeSesionIniciada_clickProducto_navegaADetalle() {
+
         lateinit var navController: NavHostController
+
+        val catalogoVM = mockk<CatalogoViewModel>(relaxed = true)
+        every { catalogoVM.productos } returns MutableStateFlow(fakeProducts)
+
+        val sessionVM = mockk<SessionViewModel>(relaxed = true)
+        every { sessionVM.usuarioActual } returns MutableStateFlow(null)
 
         composeTestRule.setContent {
             navController = rememberNavController()
+
             HomeSesionIniciada(
                 navController = navController,
-                catalogoViewModel = FakeCatalogoViewModel(fakeProducts),
-                sessionViewModel = FakeSessionViewModel()
+                catalogoViewModel = catalogoVM,
+                sessionViewModel = sessionVM
             )
         }
 
-        // Click en el primer producto
-        composeTestRule
-            .onNodeWithText("Torta Chocolate")
-            .performClick()
+        composeTestRule.onNodeWithText("Torta Chocolate").performClick()
 
         composeTestRule.waitForIdle()
 
-        // Verificar destino
-        val route = navController.currentDestination?.route
-        assert(route?.startsWith("detalle") == true)
+        assert(navController.currentDestination?.route?.startsWith("detalle") == true)
     }
 }
