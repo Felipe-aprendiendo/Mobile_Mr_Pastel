@@ -87,10 +87,16 @@ class HomeSesionIniciadaTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Torta Chocolate").performClick()
+        // CLIC REAL SOBRE EL BOTÓN REAL
+        composeTestRule
+            .onNodeWithTag("verDetalles_1")
+            .performClick()
 
         composeTestRule.waitForIdle()
 
-        assert(navController.currentDestination?.route?.startsWith("detalle") == true)
+        val route = navController.currentBackStackEntry?.destination?.route
+
+        assert(route?.startsWith("detalle") == true)
     }
+
 }
