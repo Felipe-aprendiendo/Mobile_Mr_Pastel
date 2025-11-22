@@ -7,6 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -95,7 +96,15 @@ fun ProductoCard(
 
             Button(
                 onClick = { onVerDetalles(producto) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .testTag("verDetalles_${producto.id}")
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .padding(horizontal = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text("Ver detalles")
             }
