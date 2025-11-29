@@ -1,21 +1,23 @@
 package com.grupo3.misterpastel.ui.components
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.model.Producto
+import java.text.NumberFormat
+import java.util.*
 
 @Composable
 fun ProductoCard(
@@ -23,57 +25,79 @@ fun ProductoCard(
     onVerDetalles: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+    val context = LocalContext.current
+
+    // ============================
+    // 🔥 Fallback local (si URL falla)
+    // ============================
+    val fallbackLocalImage = producto.imagenLocal?.let { localName ->
+        val id = context.resources.getIdentifier(localName, "drawable", context.packageName)
+        if (id != 0) id else R.drawable.placeholder
+    } ?: R.drawable.placeholder
+
+    // ============================
+    // 💵 Formato CLP
+    // ============================
+    val precioFormateado = try {
+        NumberFormat.getNumberInstance(Locale("es", "CL")).format(producto.precio.toInt()) + " CLP"
+    } catch (e: Exception) {
+        producto.precio + " CLP"
+    }
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(260.dp),
+            .height(300.dp),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally, // centra los hijos
-            verticalArrangement = Arrangement.Center, // centra verticalmente
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(8.dp)
-                .fillMaxSize() // asegura que la columna ocupe toda la tarjeta
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(8.dp)
         ) {
-            Image(
-                painter = painterResource(id = producto.imagen),
+
+            // ============================
+            // 🖼 AsyncImage optimizada
+            // ============================
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(producto.imagen)         // URL Cloudinary
+                    .crossfade(true)
+                    .placeholder(fallbackLocalImage)  // fallback
+                    .error(fallbackLocalImage)        // error
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .build(),
                 contentDescription = producto.nombre,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(120.dp)
-                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .height(150.dp)
             )
 
-            // Texto del nombre centrado horizontalmente
+            Spacer(Modifier.height(8.dp))
+
             Text(
                 text = producto.nombre,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
             )
 
-            // Texto del precio centrado horizontalmente
+            Spacer(Modifier.height(6.dp))
+
             Text(
-                text = producto.precio,
+                text = precioFormateado,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    color = MaterialTheme.colorScheme.primary
+                )
             )
 
-            // Botón
+            Spacer(Modifier.height(12.dp))
+
             Button(
                 onClick = { onVerDetalles(producto) },
                 modifier = Modifier
+                    .testTag("verDetalles_${producto.id}")
                     .fillMaxWidth()
                     .height(36.dp)
                     .padding(horizontal = 8.dp),
@@ -82,7 +106,7 @@ fun ProductoCard(
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text("Ver detalles", fontSize = 14.sp)
+                Text("Ver detalles")
             }
         }
     }

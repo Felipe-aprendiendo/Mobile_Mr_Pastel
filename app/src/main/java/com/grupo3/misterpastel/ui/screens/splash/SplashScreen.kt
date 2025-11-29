@@ -17,7 +17,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavController) {
-    // Simula el tiempo de carga de la app (3 segundos)
+    // Simula el tiempo de carga de la app
     LaunchedEffect(Unit) {
         delay(3000)
         navController.navigate("home") {
