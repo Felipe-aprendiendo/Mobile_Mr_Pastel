@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.grupo3.misterpastel.repository.DescuentoAplicado
 import com.grupo3.misterpastel.viewmodel.PagoViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -29,6 +30,8 @@ fun ComprobantePagoScreen(navController: NavController) {
     }
     val vm: PagoViewModel = androidx.lifecycle.viewmodel.compose.viewModel(parentEntry)
     val comprobante by vm.comprobante.collectAsState()
+    val descuentosAplicados by vm.descuentosAplicados.collectAsState()
+
 
     // Validación temprana
     if (comprobante == null) {
@@ -56,7 +59,12 @@ fun ComprobantePagoScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
 
     val itemsComprobante = comprobante?.items ?: emptyList()
-
+    val montosDescuentos = remember(comprobante, descuentosAplicados) {
+        calcularMontosDescuentosAcumulados(
+            subtotal = comprobante!!.subtotal,
+            descuentos = descuentosAplicados
+        )
+    }
     Scaffold { padding ->
         LazyColumn(
             modifier = Modifier
@@ -118,7 +126,26 @@ fun ComprobantePagoScreen(navController: NavController) {
             item {
                 Divider(Modifier.padding(vertical = 12.dp))
                 Text("Subtotal: ${nf.format(comprobante!!.subtotal)} CLP")
-                Text("Descuento: ${comprobante!!.descuentoEtiqueta} (-${nf.format(comprobante!!.descuentoMonto)})")
+
+                // Descuentos uno por uno (acumulativos)
+                descuentosAplicados.forEachIndexed { index, descuento ->
+                    val porcentajeStr = (descuento.porcentaje * 100).toInt()
+                    val montoDesc = montosDescuentos.getOrNull(index) ?: 0.0
+                    Text(
+                        "Descuento: $porcentajeStr% (${descuento.etiqueta}) -${nf.format(montoDesc)} CLP",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                Divider(Modifier.padding(vertical = 8.dp))
+
+                Text(
+                    "Total Descuentos: -${nf.format(comprobante!!.descuentoMonto)} CLP",
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.error
+                )
+
+                Divider(Modifier.padding(vertical = 8.dp))
                 Text(
                     "Total: ${nf.format(comprobante!!.totalFinal)} CLP",
                     fontWeight = FontWeight.Bold,
@@ -152,4 +179,18 @@ fun ComprobantePagoScreen(navController: NavController) {
             }
         }
     }
+}
+private fun calcularMontosDescuentosAcumulados(
+    subtotal: Double,
+    descuentos: List<DescuentoAplicado>
+): List<Double> {
+    var base = subtotal
+    val montos = mutableListOf<Double>()
+
+    for (d in descuentos) {
+        val monto = base * d.porcentaje
+        montos.add(monto)
+        base -= monto
+    }
+    return montos
 }
