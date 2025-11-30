@@ -36,6 +36,18 @@ fun CarritoScreen(
     // Contexto necesario para acceder a Room
     val context = LocalContext.current
 
+    // LÓGICA DE CARGA DE DATOS DEL USUARIO AL INICIO DE LA PANTALLA
+    LaunchedEffect(Unit) {
+        val usuarioRepo = UsuarioRepository.getInstance(context)
+        val usuario = usuarioRepo.usuarioActual.value
+
+        if (usuario != null) {
+            vm.actualizarDatosUsuario(usuario.edad, usuario.email)
+        } else {
+            vm.actualizarDatosUsuario(null, null)
+        }
+    }
+
     // PagoViewModel compartido entre pantallas
     val parentEntry = remember(navController) {
         navController.getBackStackEntry("carrito")
@@ -49,7 +61,17 @@ fun CarritoScreen(
     val nf = remember { NumberFormat.getNumberInstance(Locale("es", "CL")) }
 
     val totalBruto = remember(items) { vm.totalBruto() }
-    val totalConDesc = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) { vm.totalConDescuento() }
+    val totalConDesc = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) {
+        vm.totalConDescuento()
+    }
+
+    // Obtenemos la lista de descuentos aplicados (DUOC, edad, cupón)
+    val descuentosAplicados = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) {
+        vm.obtenerDescuentosAplicados()
+    }
+
+    // Calculamos el monto total de descuento para mostrar
+    val descuentoMontoTotal = totalBruto - totalConDesc
 
     Scaffold(
         topBar = {
@@ -104,7 +126,10 @@ fun CarritoScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     OutlinedButton(onClick = {
-                                        vm.actualizarCantidad(item.producto.id, item.cantidad - 1)
+                                        vm.actualizarCantidad(
+                                            item.producto.id,
+                                            item.cantidad - 1
+                                        )
                                     }) { Text("-") }
 
                                     Text(
@@ -114,7 +139,10 @@ fun CarritoScreen(
                                     )
 
                                     OutlinedButton(onClick = {
-                                        vm.actualizarCantidad(item.producto.id, item.cantidad + 1)
+                                        vm.actualizarCantidad(
+                                            item.producto.id,
+                                            item.cantidad + 1
+                                        )
                                     }) { Text("+") }
 
                                     TextButton(onClick = { vm.eliminar(item.producto.id) }) {
@@ -157,18 +185,31 @@ fun CarritoScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
 
-                    val etiquetaDesc = when {
-                        (vm.emailUsuario ?: "").endsWith("@duocuc.cl", true) -> "Descuento aplicado: 100% (DUOC)"
-                        (vm.edadUsuario ?: 0) >= 50 -> "Descuento aplicado: 50% (edad)"
-                        (coupon ?: "").equals("FELICES50", true) -> "Descuento aplicado: 10% (cupón)"
-                        else -> "Descuento aplicado: 0%"
+                    // MOSTRAR TODOS LOS DESCUENTOS APLICADOS
+                    descuentosAplicados.forEach { descuento ->
+                        val porcentajeStr = (descuento.porcentaje * 100).toInt()
+                        Text(
+                            "Descuento aplicado: $porcentajeStr% (${descuento.etiqueta})",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
 
-                    Text(
-                        etiquetaDesc,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    // Mostrar el monto total de descuento
+                    if (descuentoMontoTotal > 0.0) {
+                        Text(
+                            "Descuento total: -${nf.format(descuentoMontoTotal)} CLP",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    } else if (descuentosAplicados.isEmpty()) {
+                        Text(
+                            "Descuento aplicado: 0%",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
                     Text(
                         "Total a pagar: ${nf.format(totalConDesc)} CLP",
                         fontSize = 20.sp,
@@ -186,13 +227,20 @@ fun CarritoScreen(
                         val usuario = usuarioRepo.usuarioActual.value
 
                         if (usuario != null && items.isNotEmpty()) {
+                            // 1) Tomamos la lista de descuentos ANTES de vaciar carrito/cupón
+                            val descuentos = vm.obtenerDescuentosAplicados()
+
+                            // 2) Generamos el comprobante (CarritoRepository aquí hace vaciar())
                             val comprobante = vm.confirmarPedidoYGuardarComprobante(
                                 usuarioNombre = usuario.nombre,
                                 usuarioEmail = usuario.email,
                                 edadUsuario = usuario.edad
                             )
+
+                            // 3) Guardamos el pedido y pasamos datos al PagoViewModel
                             pedidoVM.registrarPedidoDesdeComprobante(usuario.id, comprobante)
-                            pagoVM.setComprobante(comprobante)
+                            pagoVM.setComprobanteYDescuentos(comprobante, descuentos)
+
                             navController.navigate("procesando_pago")
                         } else {
                             // Si no hay sesión activa, redirige al login
