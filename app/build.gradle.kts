@@ -19,6 +19,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("mi-keystore.jks")
+            storePassword = "Miclavekeystore123!"
+            keyAlias = "mrpastel-key"
+            keyPassword = "Miclavekeystore123!"
+        }
+    }
+
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,8 +36,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            // IMPORTANTE: agregar esto
+            signingConfig = signingConfigs.getByName("release")
         }
     }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
