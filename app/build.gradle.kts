@@ -1,3 +1,7 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +9,12 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Código para leer local.properties
+val keystorePropertiesFile = rootProject.file("local.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 android {
     namespace = "com.grupo3.misterpastel"
     compileSdk = 36
@@ -41,7 +51,6 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
-
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
