@@ -1,228 +1,178 @@
-# 🍰 Mil Sabores Mobile (Mr. Pastel)
-
-**Mil Sabores Mobile** es una aplicación Android desarrollada con **Kotlin + Jetpack Compose**, que digitaliza la experiencia de compra de la pastelería chilena *Mil Sabores*, ofreciendo un sistema moderno de e-commerce para tortas, repostería y pedidos personalizados.
-
-
----
-
-## 🚀 Características principales
-
-- 🧁 **Catálogo interactivo** de productos con buscador y filtros por categoría.
-- 🛒 **Carrito de compras dinámico** con descuentos automáticos:
-  - 100% descuento si correo termina en `@duocuc.cl`
-  - 50% descuento si edad ≥ 50 años
-  - 10% descuento con cupón `FELICES50`
-- 💳 **Procesamiento de pago simulado** con generación de comprobante digital.
-- 📦 **Gestión de pedidos** (historial con estado).
-- 👤 **Registro/Login seguro** con contraseñas **hasheadas (BCrypt)**.
-- 📸 **Perfil de usuario con cámara o selección de imagen desde archivos.**
-- 🌙 **Tema visual personalizado (MrPastelTheme).**
-- 💾 **Persistencia local con Room Database (Productos, Usuarios, Pedidos).**
-- 🧭 **Navegación con Jetpack Navigation Compose.**
-
----
-
-## 🧱 Arquitectura
-
-El proyecto sigue el patrón **MVVM (Model - ViewModel - View)** + **Repository Pattern**.
-
-    UI (Compose Screens)
-    ↓
-    ViewModel (maneja estado y lógica de presentación)
-    ↓
-    Repository (reglas de negocio y validaciones)
-    ↓
-    Room (persistencia local: @Entity, @Dao, @Database)
-
-
----
-
-## 📂 Estructura del proyecto
-
-    app/
-     └─ src/main/java/com/grupo3/misterpastel/
-        ├─ MainActivity.kt
-        ├─ navigation/
-        │   └─ AppNavigation.kt
-        ├─ ui/
-        │   ├─ components/
-        │   │   └─ ProductoCard.kt
-        │   ├─ screens/
-        │   │   ├─ HomeScreen.kt
-        │   │   ├─ HomeSesionIniciada.kt
-        │   │   ├─ LoginScreen.kt
-        │   │   ├─ RegistroScreen.kt
-        │   │   ├─ DetalleProductoScreen.kt
-        │   │   ├─ CarritoScreen.kt
-        │   │   ├─ PagoProcesandoScreen.kt
-        │   │   ├─ ComprobantePagoScreen.kt
-        │   │   ├─ PedidoScreen.kt
-        │   │   ├─ PerfilUsuarioScreen.kt   ← cámara/archivos
-        │   │   └─ splash/SplashScreen.kt
-        │   └─ theme/
-        │       ├─ Color.kt
-        │       ├─ Theme.kt
-        │       └─ Type.kt
-        ├─ viewmodel/
-        │   ├─ LoginViewModel.kt
-        │   ├─ RegistroViewModel.kt
-        │   ├─ SessionViewModel.kt
-        │   ├─ CatalogoViewModel.kt
-        │   ├─ CarritoViewModel.kt
-        │   ├─ PagoViewModel.kt
-        │   └─ PedidoViewModel.kt
-        ├─ model/
-        │   ├─ Usuario.kt
-        │   ├─ Producto.kt
-        │   ├─ CarritoItem.kt (+ extensión subtotal)
-        │   ├─ Carrito.kt
-        │   ├─ Pedido.kt
-        │   ├─ ComprobantePago.kt
-        │   ├─ Categoria.kt
-        │   └─ EstadoPedido.kt
-        └─ repository/
-            ├─ ProductoRepository.kt
-            ├─ UsuarioRepository.kt   ← registro/login con BCrypt
-            ├─ CarritoRepository.kt   ← descuentos/cupones/comprobante
-            ├─ PedidoRepository.kt
-            └─ local/                 ← ROOM
-                ├─ AppDatabase.kt
-                ├─ ProductoEntity.kt
-                ├─ ProductoDao.kt
-                ├─ UsuarioEntity.kt
-                ├─ UsuarioDao.kt
-                ├─ PedidoEntity.kt
-                └─ PedidoDao.kt
-    
-    res/
-     ├─ drawable/ (imágenes del catálogo y logos)
-
  
----
 
-## 🔒 Seguridad
+DESARROLLO DE APLICACIONES MÓVILES
 
-El sistema implementa **hashing de contraseñas** con **BCrypt** para garantizar la seguridad de los usuarios:
-
-    Registro
-    val hash = BCrypt.hashpw(password, BCrypt.gensalt())
-    usuarioDao.insertarUsuario(UsuarioEntity(..., passwordHash = hash))
-    
-    Login
-    val valido = BCrypt.checkpw(passwordIngresada, entity.passwordHash)
-
-     ├─ mipmap/   (iconos de la app)
-     └─ values/   (strings.xml, etc.)
-
----
-
-## 🗄️ Persistencia (Room Database)
-
-Entidades principales:
-
-    - ProductoEntity
-    
-    - UsuarioEntity
-    
-    - PedidoEntity
-
-Ejemplo de @Dao:
-
-    @Dao
-    interface ProductoDao {
-      @Insert(onConflict = REPLACE) suspend fun insertarProductos(list: List<ProductoEntity>)
-      @Query("SELECT * FROM producto") fun obtenerTodos(): Flow<List<ProductoEntity>>
-    }
----
-
-## 🧭 Navegación
-
-Se implementa con Navigation Compose (NavHost + NavController).
-
-Rutas: splash → home → login/registro → homeSesion → detalle → carrito → pago → comprobante → pedidos → perfil.
----
-
-## 📱 Funcionalidades nativas
-
-Cámara: captura foto con ActivityResultContracts.TakePicturePreview().
-
-Archivos: selecciona imagen con ActivityResultContracts.GetContent().
-
-Almacenamiento: se usa MediaStore para guardar imágenes en la galería (Pictures/MrPastel).
-
-Visualización: imágenes renderizadas con Coil (AsyncImage(uri)).
-
----
-## ⚙️ Tecnologías
-- Componente	Tecnología / Librería
-- Lenguaje  	  Kotlin
-- UI	          Jetpack Compose
-- Arquitectura	MVVM + Repository
-- Persistencia	Room Database
-- Navegación	  Navigation Compose
-- Hashing	      BCrypt
-- Imágenes	    Coil
-- Android       SDK	33+
-- IDE	Android   Studio Koala 🐨
-
----
-## 🧩 Flujo principal
-
-- El usuario abre la app (SplashScreen).
-
-- Si no ha iniciado sesión → LoginScreen / RegistroScreen.
-
-- Tras el login → HomeSesionIniciada (catálogo).
-
-- Puede ver detalles, agregar productos al carrito.
-
-- Desde el carrito → aplicar cupón o pagar.
-
-- Genera un comprobante (ComprobantePago).
-
-- El pedido se guarda en la base local (Room).
-
-- El usuario puede ver sus pedidos en PedidoScreen.
-
-- En PerfilUsuarioScreen, puede cambiar su foto o datos.
-
----
-## 📦 Instalación y ejecución
-
-- Clona el repositorio:
-    
-      git clone https://github.com/grupo3/milsabores-mobile.git
+MISTER PASTEL APP
 
 
-- Ábrelo con Android Studio.
 
-      Ejecuta en un emulador o dispositivo físico (API 33+).
-
-- (Opcional) Limpia y reconstruye:
-
-      Build → Clean Project
-      Build → Rebuild Project
----
-## 👥 Autores
-
-Grupo 3 — Proyecto DSY1104: Mil Sabores
-
-Integrante 1: Felipe Hernández 
-
-Integrante 2: Maximiliano Madrid
-
-Integrante 3: Omar Felipe
+Integrantes:
+Omar Felipe
+Felipe Hernández
+Maximiliano Madrid
 
 
----
-## 🎂 Créditos
+Sección:
+DSY1105-005V
 
-Desarrollado con ❤️ por estudiantes DUOC UC.
-Proyecto académico — no comercial.
-Inspirado en la pastelería Mil Sabores (Chile).
 
----
-## 🪶 Licencia
+Profesor:
+Miguel Avecedo C.
 
-Este proyecto es de uso educativo.
-Puedes modificarlo y reutilizarlo con fines académicos, dando crédito al equipo original.
+
+
+
+
+
+1. Descripción General del Proyecto
+
+Mister Pastel es una aplicación móvil desarrollada en Kotlin + Jetpack Compose, cuyo propósito es digitalizar la experiencia de compra de una pastelería ficticia —permitiendo explorar productos, revisar detalles, filtrar por categorías y navegar mediante un catálogo visual moderno.
+Este proyecto corresponde a la Evaluación Parcial 4 y es un avance directo hacia el Examen Final Transversal (EFT), cumpliendo los requisitos de:
+-	Integración con API externa real vía Retrofit
+-	Persistencia local con Room Database
+-	Arquitectura MVVM + Repository
+-	Navegación completa con Compose
+-	Generación de APK firmado
+-	Trabajo colaborativo gestionado con GitHub
+
+2. Funcionalidades del Proyecto
+
+Catálogo de productos
+-	Obtención remota de productos mediante API APEX.
+-	Sincronización automática al abrir la app.
+-	Filtros por categoría.
+-	Buscador por texto.
+Vista de detalle de productos
+-	Imagen principal
+-	Nombre, precio y descripción
+-	Acceso desde el catálogo
+Navegación completa
+-	Home (modo invitado)
+-	Pantalla de catálogo con sesión iniciada
+-	Menú lateral (Drawer)
+-	Detalle de producto
+-	Carrito (solo accesible con sesión)
+Persistencia con Room
+-	Sincronización catálogo → base de datos local
+-	Repositorio centralizado para acceso y cache local
+Integración con API externa real
+-	API APEX Oracle ORDS (Mr Pastel API)
+-	Retrofit configurado correctamente
+-	Operación: GET productos
+Interfaz moderna
+-	Jetpack Compose
+-	Material 3
+-	Uso de Coil para carga de imágenes
+
+
+
+3. Arquitectura del Sistema
+
+El proyecto utiliza el patrón MVVM, estructurado en 4 capas:
+
+UI (Compose)
+Pantallas, componentes y navegación.
+
+ViewModels
+Administran el estado y la lógica de presentación.
+Ejemplo: CatalogoViewModel gestiona el catálogo, búsqueda, filtros y sincronización remota.
+
+Repository
+Capa intermedia encargada de:
+-	Obtener datos de la API externa (Retrofit)
+-	Guardar y leer desde Room Database
+-	Mantener lista centralizada de productos
+
+Room (Persistencia Local)
+Incluye:
+-	ProductoEntity
+-	ProductoDao
+-	AppDatabase
+
+
+4. API Externa Utilizada
+
+La app consume datos desde una API real expuesta con Oracle APEX / ORDS:
+https://g382daee58087c5-mrpastelreact.adb.sa-santiago-1.oraclecloudapps.com/ords/mr_pastel/api/
+
+Endpoint utilizado:
+GET /productos/
+
+Archivos encargados del consumo:
+-	RetrofitInstance.kt → configuración Base URL
+-	ApiService.kt → definición del endpoint
+-	ProductoRepository.kt → sincronización API → Room
+
+
+5. Dependencias principales
+
+El proyecto utiliza:
+-	Kotlin
+-	Jetpack Compose
+-	Navigation Compose
+-	Room Database
+-	Retrofit + Gson
+-	Coil (imágenes)
+-	StateFlow
+Todas están declaradas dentro del archivo build.gradle.kts.
+
+
+
+6. Estructura del Proyecto
+
+app/
+ └─ src/main/java/com/grupo3/misterpastel/
+      ├─ model/                      ← modelos de datos
+      ├─ viewmodel/            ← lógica de presentación
+      ├─ repository/              ← repositorios + acceso API
+       │   ├─ remote/              ← Retrofit
+       │    └─ local/                    ← Room
+      ├─ ui/
+       │   ├─ screens/             ← pantallas Compose
+       │   └─ components/      ← componentes reutilizables
+       └─ MrPastelApp.kt        ← configuración global Coil
+
+
+7. Cómo Ejecutar el Proyecto
+Requisitos
+-	Android Studio Koala o superior
+-	SDK 33+
+-	Emulador o dispositivo físico con Android 10+
+-	Internet activo (primer uso sincroniza catálogo)
+
+Pasos
+1.	Clonar el repositorio:
+2.	git clone https://github.com/Felipe-aprendiendo/Mobile_Mr_Pastel.git
+3.	Abrir en Android Studio
+4.	Esperar sincronización de Gradle
+5.	Ejecutar el proyecto
+6.	La app iniciará en modo invitado y luego permitirá navegar al catálogo
+
+8. APK Firmado
+El APK entregado está firmado con la llave:
+-	Archivo: mi-keystore.jks
+-	Alias: almacenado internamente (no se publica por seguridad)
+-	Firma aplicada mediante: Build → Generate Signed Bundle / APK
+El archivo APK se encuentra incluido en el repositorio en la carpeta correspondiente a la entrega.
+
+
+9. Estado Actual del Proyecto
+-	Projecto móvil funcional
+-	API externa integrada (Retrofit + APEX)
+-	Sincronización local mediante Room
+-	Navegación fluida con Compose
+-	Catálogo completo y filtrable
+-	Uso de GitHub como herramienta colaborativa
+-	APK firmado
+
+
+
+
+
+
+
+
+
+
+
+
