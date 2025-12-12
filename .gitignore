@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Ignorar las llaves de firma
+*.jks
+*.keystore

@@ -1,3 +1,7 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +9,12 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Código para leer local.properties
+val keystorePropertiesFile = rootProject.file("local.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
 android {
     namespace = "com.grupo3.misterpastel"
     compileSdk = 36
@@ -19,6 +29,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("mi-keystore.jks")
+            storePassword = "Miclavekeystore123!"
+            keyAlias = "mrpastel-key"
+            keyPassword = "Miclavekeystore123!"
+        }
+    }
+
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -26,6 +46,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            // IMPORTANTE: agregar esto
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

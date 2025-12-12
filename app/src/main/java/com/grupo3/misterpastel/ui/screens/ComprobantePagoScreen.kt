@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.grupo3.misterpastel.repository.DescuentoAplicado
 import com.grupo3.misterpastel.viewmodel.PagoViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -29,6 +30,8 @@ fun ComprobantePagoScreen(navController: NavController) {
     }
     val vm: PagoViewModel = androidx.lifecycle.viewmodel.compose.viewModel(parentEntry)
     val comprobante by vm.comprobante.collectAsState()
+    val descuentosAplicados by vm.descuentosAplicados.collectAsState()
+
 
     // Validación temprana
     if (comprobante == null) {
@@ -56,7 +59,12 @@ fun ComprobantePagoScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
 
     val itemsComprobante = comprobante?.items ?: emptyList()
-
+    val montosDescuentos = remember(comprobante, descuentosAplicados) {
+        calcularMontosDescuentosAcumulados(
+            subtotal = comprobante!!.subtotal,
+            descuentos = descuentosAplicados
+        )
+    }
     Scaffold { padding ->
         LazyColumn(
             modifier = Modifier
@@ -105,25 +113,102 @@ fun ComprobantePagoScreen(navController: NavController) {
                 }
             } else {
                 items(itemsComprobante, key = { it.producto.id }) { item ->
+                    val precioNumerico = try {
+                        item.producto.precio.toDouble()
+                    } catch (e: Exception) {
+                        0.0
+                    }
+
+                    val subtotalProducto = precioNumerico * item.cantidad
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("${item.producto.nombre} x${item.cantidad}")
-                        Text(item.producto.precio)
+                        Text("${nf.format(subtotalProducto)} CLP",
+                            textAlign = androidx.compose.ui.text.style.TextAlign.End)
                     }
                 }
             }
 
             item {
                 Divider(Modifier.padding(vertical = 12.dp))
-                Text("Subtotal: ${nf.format(comprobante!!.subtotal)} CLP")
-                Text("Descuento: ${comprobante!!.descuentoEtiqueta} (-${nf.format(comprobante!!.descuentoMonto)})")
-                Text(
-                    "Total: ${nf.format(comprobante!!.totalFinal)} CLP",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+
+                // Subtotal
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Subtotal:")
+                    Text(
+                        "${nf.format(comprobante!!.subtotal)} CLP",
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                }
+                Divider(Modifier.padding(vertical = 12.dp))
+
+
+                // Descuentos uno por uno (acumulativos)
+                descuentosAplicados.forEachIndexed { index, descuento ->
+                    val porcentajeStr = (descuento.porcentaje * 100).toInt()
+                    val montoDesc = montosDescuentos.getOrNull(index) ?: 0.0
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "Descuento: $porcentajeStr% (${descuento.etiqueta})",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            "-${nf.format(montoDesc)} CLP",
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.End
+                        )
+                    }
+                }
+
+                Divider(Modifier.padding(vertical = 8.dp))
+
+                // Total Descuentos
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Total Descuentos:",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        "-${nf.format(comprobante!!.descuentoMonto)} CLP",
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                }
+
+                Divider(Modifier.padding(vertical = 8.dp))
+
+                // Total Final
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Total:",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "${nf.format(comprobante!!.totalFinal)} CLP",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
+                    )
+                }
+
                 Divider(Modifier.padding(vertical = 12.dp))
                 Text(
                     "¡Gracias por preferir Pastelería Mr. Pastel! 🍰",
@@ -152,4 +237,18 @@ fun ComprobantePagoScreen(navController: NavController) {
             }
         }
     }
+}
+private fun calcularMontosDescuentosAcumulados(
+    subtotal: Double,
+    descuentos: List<DescuentoAplicado>
+): List<Double> {
+    var base = subtotal
+    val montos = mutableListOf<Double>()
+
+    for (d in descuentos) {
+        val monto = base * d.porcentaje
+        montos.add(monto)
+        base -= monto
+    }
+    return montos
 }
