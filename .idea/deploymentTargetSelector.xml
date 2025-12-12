@@ -2,25 +2,11 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="app">
+      <SelectionState runConfigName="PedidoDaoTest (1)">
         <option name="selectionMode" value="DROPDOWN" />
-<<<<<<< HEAD
       </SelectionState>
       <SelectionState runConfigName="HomeSesionIniciadaTest">
         <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
-      <SelectionState runConfigName="PedidoDaoTest">
-        <option name="selectionMode" value="DROPDOWN" />
-=======
-        <DropdownSelection timestamp="2025-11-30T05:31:12.620408100Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\USUARIO\.android\avd\Pixel_6a.avd" />
-            </handle>
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
->>>>>>> origin/main
       </SelectionState>
     </selectionStates>
   </component>
