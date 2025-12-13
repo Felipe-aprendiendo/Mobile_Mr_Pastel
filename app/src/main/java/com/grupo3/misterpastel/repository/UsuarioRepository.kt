@@ -1,22 +1,30 @@
 package com.grupo3.misterpastel.repository
 
-
 import android.content.Context
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.repository.local.AppDatabase
 import com.grupo3.misterpastel.repository.local.UsuarioEntity
+import com.grupo3.misterpastel.repository.remote.ApiService
+import com.grupo3.misterpastel.repository.remote.dto.LoginRequestDto
+import com.grupo3.misterpastel.repository.remote.dto.RegistroRequestDto
+import com.grupo3.misterpastel.repository.remote.dto.UpdateUsuarioRequestDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
-import org.mindrot.jbcrypt.BCrypt
-import java.util.UUID
+import retrofit2.HttpException
+import java.io.IOException
 
-/**IMPORTANTE
- * Repositorio central de usuarios con persistencia en SQLite (Room).
- * Mantiene sincronía con los ViewModels existentes mediante StateFlow.
+/**
+ * Repositorio central de usuarios.
+ *
+ * Fuente de verdad: APEX (ORDS).
+ * Room se usa solo como cache de sesión local.
  */
-class UsuarioRepository private constructor(private val context: Context) {
+class UsuarioRepository private constructor(
+    private val context: Context,
+    private val api: ApiService
+) {
 
     private val usuarioDao = AppDatabase.getDatabase(context).usuarioDao()
 
@@ -27,9 +35,9 @@ class UsuarioRepository private constructor(private val context: Context) {
         @Volatile
         private var INSTANCE: UsuarioRepository? = null
 
-        fun getInstance(context: Context): UsuarioRepository {
+        fun getInstance(context: Context, api: ApiService): UsuarioRepository {
             return INSTANCE ?: synchronized(this) {
-                val instance = UsuarioRepository(context)
+                val instance = UsuarioRepository(context, api)
                 INSTANCE = instance
                 instance
             }
@@ -37,108 +45,149 @@ class UsuarioRepository private constructor(private val context: Context) {
     }
 
     // ==============================
-    // REGISTRO DE NUEVO USUARIO
+    // REGISTRO DE USUARIO (APEX)
     // ==============================
     suspend fun registrar(
         nombre: String,
         email: String,
         password: String,
-        edad: Int,
-        fechaNacimiento: String,
-        direccion: String,
-        telefono: String,
-        fotoUrl: String? = null
+        edad: Int?,
+        fechaNacimiento: String?,
+        direccion: String?,
+        telefono: String?,
+        fotoUrl: String?
     ): Result<Usuario> = withContext(Dispatchers.IO) {
-        val existente = usuarioDao.obtenerPorEmail(email)
-        if (existente != null) {
-            return@withContext Result.failure(IllegalArgumentException("El correo ya está registrado"))
+        try {
+            val dto = RegistroRequestDto(
+                nombre = nombre,
+                email = email,
+                edad = edad,
+                fechaNacimiento = fechaNacimiento,
+                direccion = direccion,
+                telefono = telefono,
+                password = password,
+                fotoUrl = fotoUrl
+            )
+
+            val resp = api.registrarUsuario(dto)
+
+            val usuario = Usuario(
+                id = resp.id.toString(),
+                nombre = resp.nombre,
+                email = resp.email,
+                edad = resp.edad ?: 0,
+                fechaNacimiento = fechaNacimiento ?: "",
+                direccion = direccion ?: "",
+                telefono = telefono ?: "",
+                password = "",
+                fotoUrl = fotoUrl
+            )
+
+            guardarSesionLocal(usuario)
+            _usuarioActual.value = usuario
+
+            Result.success(usuario)
+        } catch (e: HttpException) {
+            when (e.code()) {
+                409 -> Result.failure(IllegalArgumentException("El correo ya está registrado"))
+                else -> Result.failure(IllegalArgumentException("Error del servidor"))
+            }
+        } catch (e: IOException) {
+            Result.failure(IllegalArgumentException("Error de red"))
         }
-
-
-        val nuevo = Usuario(
-            id = UUID.randomUUID().toString(),
-            nombre = nombre,
-            email = email,
-            edad = edad,
-
-            fechaNacimiento = fechaNacimiento,
-            direccion = direccion,
-            telefono = telefono,
-            password = BCrypt.hashpw(password, BCrypt.gensalt()),
-            fotoUrl = fotoUrl
-        )
-
-        val entity = UsuarioEntity(
-            id = nuevo.id,
-            nombre = nuevo.nombre,
-            email = nuevo.email,
-            edad = nuevo.edad,
-            fechaNacimiento = nuevo.fechaNacimiento,
-            direccion = nuevo.direccion,
-            telefono = nuevo.telefono,
-            passwordHash = nuevo.password,
-            fotoUrl = nuevo.fotoUrl
-        )
-
-        usuarioDao.insertarUsuario(entity)
-        _usuarioActual.value = nuevo
-        Result.success(nuevo)
     }
 
     // ==============================
-    // LOGIN DE USUARIO
+    // LOGIN DE USUARIO (APEX)
     // ==============================
     suspend fun login(email: String, password: String): Result<Usuario> =
         withContext(Dispatchers.IO) {
-            val entity = usuarioDao.obtenerPorEmail(email)
-                ?: return@withContext Result.failure(IllegalArgumentException("Correo no registrado"))
+            try {
+                val resp = api.login(LoginRequestDto(email, password))
 
-            return@withContext if (BCrypt.checkpw(password, entity.passwordHash)) {
                 val usuario = Usuario(
-                    id = entity.id,
-                    nombre = entity.nombre,
-                    email = entity.email,
-                    edad = entity.edad,
-                    fechaNacimiento = entity.fechaNacimiento,
-                    direccion = entity.direccion,
-                    telefono = entity.telefono,
-                    password = entity.passwordHash,
-                    fotoUrl = entity.fotoUrl
+                    id = resp.id.toString(),
+                    nombre = resp.nombre,
+                    email = resp.email,
+                    edad = resp.edad ?: 0,
+                    fechaNacimiento = "",
+                    direccion = "",
+                    telefono = "",
+                    password = "",
+                    fotoUrl = null
                 )
+
+                guardarSesionLocal(usuario)
                 _usuarioActual.value = usuario
+
                 Result.success(usuario)
-            } else {
-                Result.failure(IllegalArgumentException("Contraseña incorrecta"))
+            } catch (e: HttpException) {
+                when (e.code()) {
+                    404 -> Result.failure(IllegalArgumentException("Correo no registrado"))
+                    401 -> Result.failure(IllegalArgumentException("Contraseña incorrecta"))
+                    else -> Result.failure(IllegalArgumentException("Error del servidor"))
+                }
+            } catch (e: IOException) {
+                Result.failure(IllegalArgumentException("Error de red"))
             }
         }
 
     // ==============================
     // CERRAR SESIÓN
     // ==============================
-
-    fun logout() {
+    suspend fun logout() = withContext(Dispatchers.IO) {
+        usuarioDao.eliminarTodos()
         _usuarioActual.value = null
     }
 
-
     // ==============================
-    // ACTUALIZAR PERFIL
+    // ACTUALIZAR PERFIL (APEX)
     // ==============================
     suspend fun actualizarPerfil(usuario: Usuario): Result<Unit> =
         withContext(Dispatchers.IO) {
-            val encontrado = usuarioDao.obtenerPorId(usuario.id)
-                ?: return@withContext Result.failure(IllegalArgumentException("Usuario no encontrado"))
+            try {
+                val dto = UpdateUsuarioRequestDto(
+                    nombre = usuario.nombre,
+                    edad = usuario.edad,
+                    direccion = usuario.direccion,
+                    telefono = usuario.telefono,
+                    fotoUrl = usuario.fotoUrl
+                )
 
-            usuarioDao.actualizarPerfil(
-                id = usuario.id,
-                nombre = usuario.nombre,
-                direccion = usuario.direccion,
-                telefono = usuario.telefono,
-                fotoUrl = usuario.fotoUrl
-            )
+                api.updateUsuario(usuario.id.toLong(), dto)
 
-            _usuarioActual.value = usuario
-            Result.success(Unit)
+                guardarSesionLocal(usuario)
+                _usuarioActual.value = usuario
+
+                Result.success(Unit)
+            } catch (e: HttpException) {
+                when (e.code()) {
+                    404 -> Result.failure(IllegalArgumentException("Usuario no encontrado"))
+                    else -> Result.failure(IllegalArgumentException("Error del servidor"))
+                }
+            } catch (e: IOException) {
+                Result.failure(IllegalArgumentException("Error de red"))
+            }
         }
 
+    // ==============================
+    // SESIÓN LOCAL (Room)
+    // ==============================
+    private suspend fun guardarSesionLocal(usuario: Usuario) {
+        usuarioDao.eliminarTodos()
+
+        val entity = UsuarioEntity(
+            id = usuario.id,
+            nombre = usuario.nombre,
+            email = usuario.email,
+            edad = usuario.edad,
+            fechaNacimiento = usuario.fechaNacimiento,
+            direccion = usuario.direccion,
+            telefono = usuario.telefono,
+            passwordHash = "",
+            fotoUrl = usuario.fotoUrl
+        )
+
+        usuarioDao.insertarUsuario(entity)
+    }
 }
