@@ -6,9 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.repository.UsuarioRepository
 import com.grupo3.misterpastel.repository.remote.RetrofitInstance
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SessionViewModel(application: Application) : AndroidViewModel(application) {
@@ -18,16 +17,15 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
         RetrofitInstance.api
     )
 
-    val usuarioActual: StateFlow<Usuario?> =
-        repository.usuarioActual.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    val usuarioActual: StateFlow<Usuario?> = repository.usuarioActual
+
+    private val _sessionChecked = MutableStateFlow(false)
+    val sessionChecked: StateFlow<Boolean> = _sessionChecked
 
     init {
         viewModelScope.launch {
             repository.restaurarSesionLocal()
+            _sessionChecked.value = true
         }
     }
 
@@ -40,9 +38,7 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
     fun actualizarPerfil(actualizado: Usuario, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val result = repository.actualizarPerfil(actualizado)
-            result.onFailure {
-                onError(it.message ?: "Error al actualizar perfil")
-            }
+            result.onFailure { onError(it.message ?: "Error al actualizar perfil") }
         }
     }
 
@@ -52,9 +48,7 @@ class SessionViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             val result = repository.actualizarPerfil(actualizado)
-            result.onFailure {
-                onError(it.message ?: "Error al actualizar la foto")
-            }
+            result.onFailure { onError(it.message ?: "Error al actualizar la foto") }
         }
     }
 }

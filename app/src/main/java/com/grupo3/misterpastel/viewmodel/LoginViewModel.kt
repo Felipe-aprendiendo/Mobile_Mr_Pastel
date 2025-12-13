@@ -1,6 +1,7 @@
 package com.grupo3.misterpastel.viewmodel
 
 import android.app.Application
+import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,18 +10,13 @@ import com.grupo3.misterpastel.repository.UsuarioRepository
 import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel encargado del inicio de sesión del usuario.
- * Login remoto vía APEX.
- * Restaura sesión local al iniciar.
- */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     sealed class LoginState {
-        object Success : LoginState()
+        data object Idle : LoginState()
+        data object Loading : LoginState()
+        data object Success : LoginState()
         data class Error(val message: String) : LoginState()
-        object Loading : LoginState()
-        object Idle : LoginState()
     }
 
     private val _loginState = MutableLiveData<LoginState>(LoginState.Idle)
@@ -31,49 +27,49 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         RetrofitInstance.api
     )
 
-    init {
-        // Restaurar sesión si existe
-        viewModelScope.launch {
-            repository.restaurarSesionLocal()
-        }
-    }
+    fun login(email: String, pass: String) {
+        val emailTrim = email.trim()
+        val passTrim = pass.trim()
 
-    fun login(email: String, password: String) {
-
-        // Validación email
-        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
-        if (!emailRegex.matches(email)) {
-            _loginState.value = LoginState.Error("El correo no tiene un formato válido.")
+        if (emailTrim.isBlank() || passTrim.isBlank()) {
+            _loginState.value = LoginState.Error("El correo y la contraseña son obligatorios.")
             return
         }
 
-        // Validación password
-        val passwordRegex = "^[a-zA-Z0-9]{6,}$".toRegex()
-        if (!passwordRegex.matches(password)) {
-            _loginState.value =
-                LoginState.Error("La contraseña debe tener al menos 6 caracteres alfanuméricos.")
+        if (!Patterns.EMAIL_ADDRESS.matcher(emailTrim).matches()) {
+            _loginState.value = LoginState.Error("El formato del correo no es válido.")
+            return
+        }
+
+        val passwordRegex = Regex("^[a-zA-Z0-9]{6,}$")
+        if (!passwordRegex.matches(passTrim)) {
+            _loginState.value = LoginState.Error("La contraseña debe tener al menos 6 caracteres alfanuméricos.")
             return
         }
 
         _loginState.value = LoginState.Loading
 
         viewModelScope.launch {
-            val result = repository.login(email, password)
+            val result = repository.login(emailTrim, passTrim)
 
             result.onSuccess {
                 _loginState.postValue(LoginState.Success)
-            }.onFailure { error ->
-                _loginState.postValue(
-                    LoginState.Error(error.message ?: "Error desconocido")
-                )
+            }.onFailure { err ->
+                val msg = (err.message ?: "Error desconocido").trim()
+
+                // Normalizamos a los mensajes UX requeridos
+                val normalized = when {
+                    msg.equals("Correo no registrado", ignoreCase = true) -> "correo no registrado"
+                    msg.equals("Contraseña incorrecta", ignoreCase = true) -> "contraseña incorrecta"
+                    else -> msg
+                }
+
+                _loginState.postValue(LoginState.Error(normalized))
             }
         }
     }
 
-    fun logout() {
-        viewModelScope.launch {
-            repository.logout()
-            _loginState.postValue(LoginState.Idle)
-        }
+    fun reset() {
+        _loginState.value = LoginState.Idle
     }
 }

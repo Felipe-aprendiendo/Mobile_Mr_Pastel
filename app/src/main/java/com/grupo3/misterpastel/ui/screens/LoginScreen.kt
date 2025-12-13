@@ -80,7 +80,11 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it; error = null },
+                onValueChange = {
+                    email = it
+                    error = null
+                    if (loginState is LoginViewModel.LoginState.Error) loginViewModel.reset()
+                },
                 label = { Text("Correo electrónico") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
@@ -89,7 +93,11 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it; error = null },
+                onValueChange = {
+                    password = it
+                    error = null
+                    if (loginState is LoginViewModel.LoginState.Error) loginViewModel.reset()
+                },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
