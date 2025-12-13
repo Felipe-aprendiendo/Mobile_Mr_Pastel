@@ -1,75 +1,48 @@
 package com.grupo3.misterpastel.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import com.grupo3.misterpastel.R
-import com.grupo3.misterpastel.model.Categoria
-import com.grupo3.misterpastel.model.Producto
 import com.grupo3.misterpastel.model.Usuario
-import com.grupo3.misterpastel.model.Pedido
+import com.grupo3.misterpastel.repository.UsuarioRepository
+import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import kotlinx.coroutines.launch
-import java.util.UUID
 
-class PerfilViewModel : ViewModel() {
+class PerfilViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _usuario = MutableLiveData<Usuario>()
-    val usuario: LiveData<Usuario> = _usuario
+    private val repository = UsuarioRepository.getInstance(
+        application,
+        RetrofitInstance.api
+    )
 
-    private val _pedidos = MutableLiveData<List<Pedido>>()
-    val pedidos: LiveData<List<Pedido>> = _pedidos
+    val usuario: LiveData<Usuario?> =
+        repository.usuarioActual.asLiveData()
 
-    init {
-        cargarDatosUsuario()
-    }
-
-
-    // Carga un usuario de ejemplo.
-
-    private fun cargarDatosUsuario() {
-        viewModelScope.launch {
-            _usuario.value = Usuario(
-                id = "U001",
-                nombre = "Felipe Hernández",
-                email = "felipe@email.com",
-                edad = 30,
-                fechaNacimiento = "1995-05-10",
-                direccion = "Calle Falsa 123",
-                telefono = "987654321",
-                password = "123456",
-                fotoUrl = null
-            )
-        }
-    }
-
-    /**
-     * Actualiza los datos del usuario.
-     */
-    fun actualizarDatosUsuario(
+    fun actualizarPerfil(
         nombre: String,
-        email: String,
-        edad: Int,
-        fechaNacimiento: String,
         direccion: String,
         telefono: String,
-        password: String,
-        fotoUrl: String? = null
+        fotoUrl: String?
     ) {
+        val actual = usuario.value ?: return
+
+        val actualizado = actual.copy(
+            nombre = nombre,
+            direccion = direccion,
+            telefono = telefono,
+            fotoUrl = fotoUrl
+        )
+
         viewModelScope.launch {
-            val usuarioActualizado = Usuario(
-                id = _usuario.value?.id ?: UUID.randomUUID().toString(),
-                nombre = nombre,
-                email = email,
-                edad = edad,
-                fechaNacimiento = fechaNacimiento,
-                direccion = direccion,
-                telefono = telefono,
-                password = password,
-                fotoUrl = fotoUrl
-            )
-            _usuario.value = usuarioActualizado
+            repository.actualizarPerfil(actualizado)
         }
     }
 
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+        }
+    }
 }
