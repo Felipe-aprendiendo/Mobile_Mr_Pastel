@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.EstadoPedido
+import com.grupo3.misterpastel.model.precioDouble
 import com.grupo3.misterpastel.repository.UsuarioRepository
 import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import com.grupo3.misterpastel.viewmodel.PedidoViewModel
@@ -146,7 +147,7 @@ fun PedidoCard(pedido: Pedido) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("${item.producto.nombre} x${item.cantidad}")
-                        Text("${nf.format(item.producto.precio)} CLP")
+                        Text("${nf.format(item.producto.precioDouble())} CLP")
                     }
                 }
             }
