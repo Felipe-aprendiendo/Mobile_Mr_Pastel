@@ -19,9 +19,12 @@ import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.Pedido
 import com.grupo3.misterpastel.model.EstadoPedido
 import com.grupo3.misterpastel.repository.UsuarioRepository
+import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import com.grupo3.misterpastel.viewmodel.PedidoViewModel
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,12 +32,10 @@ fun PedidoScreen(
     navController: NavController,
     pedidoViewModel: PedidoViewModel = viewModel()
 ) {
-    // Contexto necesario para acceder a Room
     val context = LocalContext.current
-    val usuarioRepo = remember { UsuarioRepository.getInstance(context) }
+    val usuarioRepo = remember { UsuarioRepository.getInstance(context, RetrofitInstance.api) }
     val usuarioActual by usuarioRepo.usuarioActual.collectAsState()
 
-    // Cargar pedidos del usuario autenticado
     LaunchedEffect(usuarioActual) {
         if (usuarioActual != null) {
             pedidoViewModel.setUserId(usuarioActual!!.id)
@@ -46,7 +47,7 @@ fun PedidoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis pedidos 🧾", fontWeight = FontWeight.Bold) },
+                title = { Text("Mis pedidos", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -66,27 +67,24 @@ fun PedidoScreen(
                 .padding(16.dp)
         ) {
             when {
-                // Usuario no autenticado
                 usuarioActual == null -> {
                     Text(
-                        text = "Inicia sesión para ver tus pedidos 🍰",
+                        text = "Inicia sesión para ver tus pedidos.",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                // Sin pedidos registrados
                 pedidos.isEmpty() -> {
                     Text(
-                        text = "Aún no has realizado pedidos 🍰",
+                        text = "Aún no has realizado pedidos.",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                // Mostrar pedidos
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -104,8 +102,10 @@ fun PedidoScreen(
 
 @Composable
 fun PedidoCard(pedido: Pedido) {
-    val formato = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-    val fechaFormateada = formato.format(Date(pedido.fecha))
+    val formatoFecha = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+    val fechaFormateada = formatoFecha.format(Date(pedido.fecha))
+
+    val nf = remember { NumberFormat.getNumberInstance(Locale("es", "CL")) }
 
     Card(
         modifier = Modifier
@@ -119,7 +119,6 @@ fun PedidoCard(pedido: Pedido) {
                 .background(MaterialTheme.colorScheme.surface),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Cabecera del pedido
             Text(
                 text = "Pedido Nº ${pedido.id}",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -127,7 +126,6 @@ fun PedidoCard(pedido: Pedido) {
             )
             Text("Fecha: $fechaFormateada")
 
-            // Estado dinámico con color según el progreso
             Text(
                 text = "Estado: ${pedido.estado.name}",
                 color = when (pedido.estado) {
@@ -141,7 +139,6 @@ fun PedidoCard(pedido: Pedido) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Productos del pedido
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 pedido.items.forEach { item ->
                     Row(
@@ -149,16 +146,15 @@ fun PedidoCard(pedido: Pedido) {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("${item.producto.nombre} x${item.cantidad}")
-                        Text(item.producto.precio)
+                        Text("${nf.format(item.producto.precio)} CLP")
                     }
                 }
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-            // Total
             Text(
-                text = "Total: $${pedido.total}",
+                text = "Total: ${nf.format(pedido.total)} CLP",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
             )

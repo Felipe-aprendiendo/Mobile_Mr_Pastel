@@ -190,4 +190,33 @@ class UsuarioRepository private constructor(
 
         usuarioDao.insertarUsuario(entity)
     }
+
+    suspend fun restaurarSesionLocal() = withContext(Dispatchers.IO) {
+        val entity = usuarioDao.obtenerSesion()
+        _usuarioActual.value = entity?.toDomain()
+    }
+
+    fun observarSesionLocal() = usuarioDao.observarSesion()
+
+
+
+}
+
+
+/* ==============================
+   MAPPER: Room -> Dominio
+   ============================== */
+
+private fun UsuarioEntity.toDomain(): Usuario {
+    return Usuario(
+        id = id,
+        nombre = nombre,
+        email = email,
+        edad = edad,
+        fechaNacimiento = fechaNacimiento,
+        direccion = direccion,
+        telefono = telefono,
+        password = "",
+        fotoUrl = fotoUrl
+    )
 }

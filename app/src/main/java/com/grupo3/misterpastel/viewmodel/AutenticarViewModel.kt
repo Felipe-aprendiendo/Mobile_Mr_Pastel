@@ -5,27 +5,33 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.model.Usuario
 import com.grupo3.misterpastel.repository.UsuarioRepository
+import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-
- // Se comunica con la base de datos local (Room) a través de UsuarioRepository.
-
 class AutenticarViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Instancia del repositorio con persistencia local (Room)
-    private val repository = UsuarioRepository.getInstance(application)
+    private val repository = UsuarioRepository.getInstance(
+        application,
+        RetrofitInstance.api
+    )
 
-    // Estado de sesión (si hay usuario logueado)
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
 
-    // Usuario actualmente autenticado
     private val _usuarioActual = MutableStateFlow<Usuario?>(null)
     val usuarioActual: StateFlow<Usuario?> = _usuarioActual
 
-    // === INICIAR SESIÓN ===
+    init {
+        viewModelScope.launch {
+            repository.restaurarSesionLocal()
+            val usuario = repository.usuarioActual.value
+            _usuarioActual.value = usuario
+            _isLoggedIn.value = usuario != null
+        }
+    }
+
     fun iniciarSesion(email: String, password: String) {
         viewModelScope.launch {
             val result = repository.login(email, password)
@@ -39,21 +45,11 @@ class AutenticarViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // === CERRAR SESIÓN ===
     fun cerrarSesion() {
         viewModelScope.launch {
             repository.logout()
             _usuarioActual.value = null
             _isLoggedIn.value = false
-        }
-    }
-
-    // === VERIFICAR SESIÓN ACTIVA ===
-    fun verificarSesionActiva() {
-        viewModelScope.launch {
-            val usuario = repository.usuarioActual.value
-            _usuarioActual.value = usuario
-            _isLoggedIn.value = usuario != null
         }
     }
 }
