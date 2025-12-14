@@ -29,6 +29,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("mi-keystore.jks")
+            storePassword = "Miclavekeystore123!"
+            keyAlias = "mrpastel-key"
+            keyPassword = "Miclavekeystore123!"
+        }
+    }
+
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -36,30 +46,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
 
-    signingConfigs {
-        create("release") {
-            // Leemos del archivo secreto. Si no existe (ej: en otra PC), usamos texto vacío para que no falle al compilar en debug.
-            storeFile = file(keystoreProperties["STORE_FILE"] as String)
-            storePassword = keystoreProperties["STORE_PASSWORD"] as String
-            keyAlias = keystoreProperties["KEY_ALIAS"] as String
-            keyPassword = keystoreProperties["KEY_PASSWORD"] as String
-        }
-
-    }
-
-    buildTypes {
-        getByName("release") {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-
-            // Aquí conectamos la firma que creamos arriba
+            // IMPORTANTE: agregar esto
             signingConfig = signingConfigs.getByName("release")
         }
     }
-
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -124,6 +115,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.runtime)
     ksp(libs.androidx.room.compiler)
 
     // ViewModel + LiveData
