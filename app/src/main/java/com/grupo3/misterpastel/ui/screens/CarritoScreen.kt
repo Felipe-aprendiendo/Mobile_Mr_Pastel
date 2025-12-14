@@ -19,11 +19,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.grupo3.misterpastel.model.subtotal
 import com.grupo3.misterpastel.repository.UsuarioRepository
+import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import com.grupo3.misterpastel.viewmodel.CarritoViewModel
 import com.grupo3.misterpastel.viewmodel.PagoViewModel
 import com.grupo3.misterpastel.viewmodel.PedidoViewModel
 import java.text.NumberFormat
-import java.util.*
+import java.util.Locale
 
 @SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,22 +34,22 @@ fun CarritoScreen(
     vm: CarritoViewModel = viewModel(),
     pedidoVM: PedidoViewModel = viewModel()
 ) {
-    // Contexto necesario para acceder a Room
     val context = LocalContext.current
 
-    // LÓGICA DE CARGA DE DATOS DEL USUARIO AL INICIO DE LA PANTALLA
-    LaunchedEffect(Unit) {
-        val usuarioRepo = UsuarioRepository.getInstance(context)
-        val usuario = usuarioRepo.usuarioActual.value
+    val usuarioRepository = remember {
+        UsuarioRepository.getInstance(context, RetrofitInstance.api)
+    }
 
+    val usuario by usuarioRepository.usuarioActual.collectAsState()
+
+    LaunchedEffect(usuario) {
         if (usuario != null) {
-            vm.actualizarDatosUsuario(usuario.edad, usuario.email)
+            vm.actualizarDatosUsuario(usuario!!.edad, usuario!!.email)
         } else {
             vm.actualizarDatosUsuario(null, null)
         }
     }
 
-    // PagoViewModel compartido entre pantallas
     val parentEntry = remember(navController) {
         navController.getBackStackEntry("carrito")
     }
@@ -65,18 +66,16 @@ fun CarritoScreen(
         vm.totalConDescuento()
     }
 
-    // Obtenemos la lista de descuentos aplicados (DUOC, edad, cupón)
     val descuentosAplicados = remember(items, coupon, vm.edadUsuario, vm.emailUsuario) {
         vm.obtenerDescuentosAplicados()
     }
 
-    // Calculamos el monto total de descuento para mostrar
     val descuentoMontoTotal = totalBruto - totalConDesc
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tu carrito 🛒", fontWeight = FontWeight.Bold) },
+                title = { Text("Tu carrito", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
@@ -125,12 +124,14 @@ fun CarritoScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    OutlinedButton(onClick = {
-                                        vm.actualizarCantidad(
-                                            item.producto.id,
-                                            item.cantidad - 1
-                                        )
-                                    }) { Text("-") }
+                                    OutlinedButton(
+                                        onClick = {
+                                            vm.actualizarCantidad(
+                                                item.producto.id,
+                                                item.cantidad - 1
+                                            )
+                                        }
+                                    ) { Text("-") }
 
                                     Text(
                                         "${item.cantidad}",
@@ -138,12 +139,14 @@ fun CarritoScreen(
                                         textAlign = TextAlign.Center
                                     )
 
-                                    OutlinedButton(onClick = {
-                                        vm.actualizarCantidad(
-                                            item.producto.id,
-                                            item.cantidad + 1
-                                        )
-                                    }) { Text("+") }
+                                    OutlinedButton(
+                                        onClick = {
+                                            vm.actualizarCantidad(
+                                                item.producto.id,
+                                                item.cantidad + 1
+                                            )
+                                        }
+                                    ) { Text("+") }
 
                                     TextButton(onClick = { vm.eliminar(item.producto.id) }) {
                                         Text("Quitar")
@@ -172,7 +175,7 @@ fun CarritoScreen(
                 ) {
                     Text(
                         if ((coupon ?: "").equals("FELICES50", true))
-                            "Código aplicado ✅"
+                            "Código aplicado"
                         else "Aplicar código"
                     )
                 }
@@ -180,70 +183,41 @@ fun CarritoScreen(
                 Spacer(Modifier.height(16.dp))
 
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    Text(
-                        "Total bruto: ${nf.format(totalBruto)} CLP",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text("Total bruto: ${nf.format(totalBruto)} CLP")
 
-                    // MOSTRAR TODOS LOS DESCUENTOS APLICADOS
-                    descuentosAplicados.forEach { descuento ->
-                        val porcentajeStr = (descuento.porcentaje * 100).toInt()
-                        Text(
-                            "Descuento aplicado: $porcentajeStr% (${descuento.etiqueta})",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                    descuentosAplicados.forEach { d ->
+                        val porcentaje = (d.porcentaje * 100).toInt()
+                        Text("Descuento aplicado: $porcentaje% (${d.etiqueta})")
                     }
 
-                    // Mostrar el monto total de descuento
                     if (descuentoMontoTotal > 0.0) {
-                        Text(
-                            "Descuento total: -${nf.format(descuentoMontoTotal)} CLP",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    } else if (descuentosAplicados.isEmpty()) {
-                        Text(
-                            "Descuento aplicado: 0%",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Text("Descuento total: -${nf.format(descuentoMontoTotal)} CLP")
                     }
 
                     Text(
                         "Total a pagar: ${nf.format(totalConDesc)} CLP",
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                // Botón de pago con validación de sesión persistente
                 Button(
                     onClick = {
-                        val usuarioRepo = UsuarioRepository.getInstance(context)
-                        val usuario = usuarioRepo.usuarioActual.value
-
                         if (usuario != null && items.isNotEmpty()) {
-                            // 1) Tomamos la lista de descuentos ANTES de vaciar carrito/cupón
                             val descuentos = vm.obtenerDescuentosAplicados()
-
-                            // 2) Generamos el comprobante (CarritoRepository aquí hace vaciar())
                             val comprobante = vm.confirmarPedidoYGuardarComprobante(
-                                usuarioNombre = usuario.nombre,
-                                usuarioEmail = usuario.email,
-                                edadUsuario = usuario.edad
+                                usuarioNombre = usuario!!.nombre,
+                                usuarioEmail = usuario!!.email,
+                                edadUsuario = usuario!!.edad
                             )
 
-                            // 3) Guardamos el pedido y pasamos datos al PagoViewModel
-                            pedidoVM.registrarPedidoDesdeComprobante(usuario.id, comprobante)
+                            pedidoVM.registrarPedidoDesdeComprobante(usuario!!.id, comprobante)
                             pagoVM.setComprobanteYDescuentos(comprobante, descuentos)
 
                             navController.navigate("procesando_pago")
                         } else {
-                            // Si no hay sesión activa, redirige al login
                             vm.vaciar()
                             navController.navigate("login")
                         }

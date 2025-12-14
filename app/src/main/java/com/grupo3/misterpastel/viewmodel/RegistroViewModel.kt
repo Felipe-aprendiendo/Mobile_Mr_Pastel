@@ -7,6 +7,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo3.misterpastel.repository.UsuarioRepository
+import com.grupo3.misterpastel.repository.remote.RetrofitInstance
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,10 +18,6 @@ import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
-/**IMPORTANTE
- * Estado que representa los datos del formulario de registro.
- * Vive en el ViewModel para sobrevivir a cambios de configuración.
- */
 data class RegistroUiState(
     val nombre: String = "",
     val email: String = "",
@@ -34,7 +31,6 @@ data class RegistroUiState(
 @RequiresApi(Build.VERSION_CODES.O)
 class RegistroViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Estado del proceso de registro
     sealed class RegistrationState {
         object Idle : RegistrationState()
         object Loading : RegistrationState()
@@ -42,82 +38,96 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
         data class Error(val message: String) : RegistrationState()
     }
 
-    private val _registrationState = MutableStateFlow<RegistrationState>(RegistrationState.Idle)
-    val registrationState: StateFlow<RegistrationState> = _registrationState.asStateFlow()
+    private val _registrationState =
+        MutableStateFlow<RegistrationState>(RegistrationState.Idle)
+    val registrationState: StateFlow<RegistrationState> =
+        _registrationState.asStateFlow()
 
-    // Estado del formulario
     private val _uiState = MutableStateFlow(RegistroUiState())
     val uiState: StateFlow<RegistroUiState> = _uiState.asStateFlow()
 
-    // Instancia del repositorio con acceso a Room
-    private val repository = UsuarioRepository.getInstance(application)
+    private val repository = UsuarioRepository.getInstance(
+        application,
+        RetrofitInstance.api
+    )
 
-    // ======== Actualización de campos ========
-    fun onNombreChange(valor: String) { _uiState.update { it.copy(nombre = valor) }; clearError() }
-    fun onEmailChange(valor: String) { _uiState.update { it.copy(email = valor) }; clearError() }
-    fun onPasswordChange(valor: String) { _uiState.update { it.copy(password = valor) }; clearError() }
-    fun onConfirmPasswordChange(valor: String) { _uiState.update { it.copy(confirmPassword = valor) }; clearError() }
-    fun onFechaNacimientoChange(valor: String) { _uiState.update { it.copy(fechaNacimiento = valor) }; clearError() }
-    fun onDireccionChange(valor: String) { _uiState.update { it.copy(direccion = valor) }; clearError() }
-    fun onTelefonoChange(valor: String) { _uiState.update { it.copy(telefono = valor) }; clearError() }
+    fun onNombreChange(v: String) { _uiState.update { it.copy(nombre = v) }; clearError() }
+    fun onEmailChange(v: String) { _uiState.update { it.copy(email = v) }; clearError() }
+    fun onPasswordChange(v: String) { _uiState.update { it.copy(password = v) }; clearError() }
+    fun onConfirmPasswordChange(v: String) { _uiState.update { it.copy(confirmPassword = v) }; clearError() }
+    fun onFechaNacimientoChange(v: String) { _uiState.update { it.copy(fechaNacimiento = v) }; clearError() }
+    fun onDireccionChange(v: String) { _uiState.update { it.copy(direccion = v) }; clearError() }
+    fun onTelefonoChange(v: String) { _uiState.update { it.copy(telefono = v) }; clearError() }
 
     private fun clearError() {
-        if (_registrationState.value is RegistrationState.Error)
+        if (_registrationState.value is RegistrationState.Error) {
             _registrationState.value = RegistrationState.Idle
+        }
     }
 
-    // ======== Registro de usuario ========
     fun register() {
         val state = _uiState.value
 
-        // --- Validaciones ---
-        if (state.nombre.isBlank() || state.email.isBlank() || state.password.isBlank() ||
-            state.confirmPassword.isBlank() || state.fechaNacimiento.isBlank() ||
-            state.direccion.isBlank() || state.telefono.isBlank()
+        if (
+            state.nombre.isBlank() ||
+            state.email.isBlank() ||
+            state.password.isBlank() ||
+            state.confirmPassword.isBlank() ||
+            state.fechaNacimiento.isBlank() ||
+            state.direccion.isBlank() ||
+            state.telefono.isBlank()
         ) {
-            _registrationState.value = RegistrationState.Error("Todos los campos son obligatorios.")
+            _registrationState.value =
+                RegistrationState.Error("Todos los campos son obligatorios.")
             return
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(state.email).matches()) {
-            _registrationState.value = RegistrationState.Error("El formato del correo no es válido.")
+            _registrationState.value =
+                RegistrationState.Error("El formato del correo no es válido.")
+            return
+        }
+
+        val passwordRegex = "^[a-zA-Z0-9]{6,}$".toRegex()
+        if (!passwordRegex.matches(state.password)) {
+            _registrationState.value =
+                RegistrationState.Error("La contraseña debe tener al menos 6 caracteres alfanuméricos.")
             return
         }
 
         if (state.password != state.confirmPassword) {
-            _registrationState.value = RegistrationState.Error("Las contraseñas no coinciden.")
+            _registrationState.value =
+                RegistrationState.Error("Las contraseñas no coinciden.")
             return
         }
 
-        if (state.password.length < 6) {
-            _registrationState.value = RegistrationState.Error("La contraseña debe tener al menos 6 caracteres.")
-            return
-        }
+        val fechaIso = try {
+            val fmtInput = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            val fecha = LocalDate.parse(state.fechaNacimiento, fmtInput)
 
-        val edad = try {
-            val fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-            val fecha = LocalDate.parse(state.fechaNacimiento, fmt)
-            val years = Period.between(fecha, LocalDate.now()).years
-            if (years < 13) {
-                _registrationState.value = RegistrationState.Error("Debes tener al menos 13 años para registrarte.")
+            val edad = Period.between(fecha, LocalDate.now()).years
+            if (edad < 13) {
+                _registrationState.value =
+                    RegistrationState.Error("Debes tener al menos 13 años para registrarte.")
                 return
             }
-            years
+
+            fecha.format(DateTimeFormatter.ISO_DATE)
         } catch (_: DateTimeParseException) {
-            _registrationState.value = RegistrationState.Error("Formato de fecha no válido. Usa dd/MM/yyyy.")
+            _registrationState.value =
+                RegistrationState.Error("Formato de fecha no válido. Usa dd/MM/yyyy.")
             return
         }
 
         _registrationState.value = RegistrationState.Loading
 
-        // --- Llamada al repositorio ---
         viewModelScope.launch {
             val result = repository.registrar(
                 nombre = state.nombre.trim(),
                 email = state.email.trim(),
                 password = state.password.trim(),
-                edad = edad,
-                fechaNacimiento = state.fechaNacimiento.trim(),
+                edad = null,
+                fechaNacimiento = fechaIso,
                 direccion = state.direccion.trim(),
                 telefono = state.telefono.trim(),
                 fotoUrl = null
@@ -127,7 +137,7 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                 _registrationState.value = RegistrationState.Success
             }.onFailure {
                 _registrationState.value =
-                    RegistrationState.Error(it.message ?: "Error desconocido al registrar usuario.")
+                    RegistrationState.Error(it.message ?: "Error al registrar usuario.")
             }
         }
     }
