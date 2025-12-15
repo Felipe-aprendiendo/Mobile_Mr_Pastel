@@ -21,13 +21,15 @@ import com.grupo3.misterpastel.R
 import com.grupo3.misterpastel.viewmodel.LoginViewModel
 
 @Composable
-fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = viewModel()) {
-
+fun LoginScreen(
+    navController: NavController,
+    loginViewModel: LoginViewModel = viewModel()
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    val loginState by loginViewModel.loginState.observeAsState()
+    val loginState by loginViewModel.loginState.observeAsState(LoginViewModel.LoginState.Idle)
 
     LaunchedEffect(loginState) {
         when (val state = loginState) {
@@ -40,15 +42,14 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
                 error = state.message
             }
             is LoginViewModel.LoginState.Loading -> {
-                error = null // Limpiar errores anteriores al cargar
-            }
-            null -> {
                 error = null
+            }
+            is LoginViewModel.LoginState.Idle -> {
+                // No acción
             }
         }
     }
 
-    // Crear el estado para recordar la posición del scroll
     val scrollState = rememberScrollState()
 
     Box(
@@ -59,7 +60,6 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
         contentAlignment = Alignment.Center
     ) {
         Column(
-            // Aplica el modificador verticalScroll a la Columna
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState),
@@ -80,7 +80,11 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it; error = null },
+                onValueChange = {
+                    email = it
+                    error = null
+                    if (loginState is LoginViewModel.LoginState.Error) loginViewModel.reset()
+                },
                 label = { Text("Correo electrónico") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
@@ -89,7 +93,11 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it; error = null },
+                onValueChange = {
+                    password = it
+                    error = null
+                    if (loginState is LoginViewModel.LoginState.Error) loginViewModel.reset()
+                },
                 label = { Text("Contraseña") },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -97,7 +105,6 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Asignamos a una variable local para el "smart cast"
             val currentError = error
             if (currentError != null) {
                 Text(
@@ -113,15 +120,16 @@ fun LoginScreen(navController: NavController, loginViewModel: LoginViewModel = v
                 enabled = loginState !is LoginViewModel.LoginState.Loading
             ) {
                 if (loginState is LoginViewModel.LoginState.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 } else {
                     Text("Ingresar")
                 }
             }
 
-            TextButton(
-                onClick = { navController.navigate("registro") }
-            ) {
+            TextButton(onClick = { navController.navigate("registro") }) {
                 Text("¿No tienes cuenta? Regístrate aquí")
             }
 
